@@ -1,0 +1,60 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Initiative {
+  id           Int       @id @default(autoincrement())
+  domain       String
+  measureName  String
+  isActive     Boolean   @default(true)
+  detail       String?
+  goal         String?
+  kpi          String?
+  startDate    DateTime?
+  endDate      DateTime?
+  department   String?
+  scheduleText String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  progressLogs ProgressLog[]
+
+  @@map("initiatives")
+}
+
+model ProgressLog {
+  id                Int       @id @default(autoincrement())
+  initiativeId      Int
+  fiscalYear        Int
+  fiscalQuarter     Int
+  progressStatus    String?
+  progressEvaluation String?
+  nextAction        String?
+  nextActionDueDate DateTime?
+  versionNo         Int       @default(1)
+  isLatest          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+
+  initiative        Initiative @relation(fields: [initiativeId], references: [id])
+
+  @@map("progress_logs")
+}
+
+model AppUser {
+  id          Int     @id @default(autoincrement())
+  email       String  @unique
+  displayName String?
+  department  String?
+  role        String  @default("editor")
+
+  @@map("app_users")
+}
