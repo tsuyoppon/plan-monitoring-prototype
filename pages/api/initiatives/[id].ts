@@ -17,10 +17,15 @@ export default async function handler(
       const initiative = await prisma.initiative.findUnique({
         where: { id: initiativeId },
         include: {
+          // include the latest record for each quarter (isLatest = true)
+          // ordered by fiscalYear desc, fiscalQuarter desc
           progressLogs: {
             where: { isLatest: true },
-            orderBy: { createdAt: 'desc' },
-            take: 1,
+            orderBy: [
+              { fiscalYear: 'desc' },
+              { fiscalQuarter: 'desc' },
+              { versionNo: 'desc' },
+            ],
           },
         },
       });

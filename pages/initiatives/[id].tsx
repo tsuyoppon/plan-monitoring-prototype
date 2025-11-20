@@ -18,7 +18,7 @@ export default function InitiativeDetail() {
 
   if (!initiative) return <div>Loading...</div>;
 
-  const latestLog = initiative.progressLogs?.[0];
+  const progressLogs = initiative.progressLogs ?? [];
 
   return (
     <div className="container mx-auto p-4">
@@ -40,19 +40,23 @@ export default function InitiativeDetail() {
 
       <div className="bg-white shadow rounded p-6">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">最新進捗</h2>
+          <h2 className="text-xl font-semibold">進捗（四半期別・最新のみ）</h2>
           <Link href={`/initiatives/${initiative.id}/progress/new`} className="bg-green-500 text-white px-4 py-2 rounded">
             進捗を追加
           </Link>
         </div>
-        
-        {latestLog ? (
-          <div className="space-y-2">
-            <div><span className="font-bold">年度/四半期:</span> {latestLog.fiscalYear}年度 Q{latestLog.fiscalQuarter}</div>
-            <div><span className="font-bold">ステータス:</span> {latestLog.progressStatus}</div>
-            <div><span className="font-bold">評価:</span> {latestLog.progressEvaluation}</div>
-            <div><span className="font-bold">次のアクション:</span> {latestLog.nextAction}</div>
-            <div><span className="font-bold">期限:</span> {latestLog.nextActionDueDate?.split('T')[0]}</div>
+
+        {progressLogs.length > 0 ? (
+          <div className="space-y-6">
+            {progressLogs.map((log) => (
+              <div key={log.id} className="border rounded p-4">
+                <div className="mb-2"><span className="font-bold">年度/四半期:</span> {log.fiscalYear}年度 Q{log.fiscalQuarter}</div>
+                <div><span className="font-bold">ステータス:</span> {log.progressStatus}</div>
+                <div><span className="font-bold">評価:</span> {log.progressEvaluation}</div>
+                <div><span className="font-bold">次のアクション:</span> {log.nextAction}</div>
+                <div><span className="font-bold">期限:</span> {log.nextActionDueDate?.split('T')[0]}</div>
+              </div>
+            ))}
           </div>
         ) : (
           <p className="text-gray-500">進捗ログはまだありません。</p>
