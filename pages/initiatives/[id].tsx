@@ -34,6 +34,7 @@ export default function InitiativeDetail() {
           <div><span className="font-bold">KPI:</span> {initiative.kpi}</div>
           <div className="col-span-2"><span className="font-bold">詳細:</span> {initiative.detail}</div>
           <div className="col-span-2"><span className="font-bold">ゴール:</span> {initiative.goal}</div>
+          <div className="col-span-2"><span className="font-bold">スケジュール詳細:</span> {initiative.scheduleText}</div>
         </div>
       </div>
 
