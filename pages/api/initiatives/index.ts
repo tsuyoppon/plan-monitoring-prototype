@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { Prisma } from '@/generated/client/client';
 import prisma from '@/lib/prisma';
 
 export default async function handler(
@@ -7,8 +8,38 @@ export default async function handler(
 ) {
   if (req.method === 'GET') {
     try {
+      const { domain, department, measureName, status } = req.query;
+
+      const where: Prisma.InitiativeWhereInput = {};
+
+      if (domain) {
+        where.domain = { contains: domain as string, mode: 'insensitive' };
+      }
+      if (department) {
+        where.department = { contains: department as string, mode: 'insensitive' };
+      }
+      if (measureName) {
+        where.measureName = { contains: measureName as string, mode: 'insensitive' };
+      }
+      if (status) {
+        where.progressLogs = {
+          some: {
+            isLatest: true,
+            progressStatus: status as string,
+          },
+        };
+      }
+
       const initiatives = await prisma.initiative.findMany({
+        where,
         orderBy: { createdAt: 'desc' },
+        include: {
+          progressLogs: {
+            where: { isLatest: true },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
+        },
       });
       res.status(200).json(initiatives);
     } catch (error) {
