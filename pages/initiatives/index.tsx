@@ -12,6 +12,10 @@ export default function InitiativesList() {
     measureName: '',
     status: '',
   });
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
+    key: '',
+    direction: 'asc',
+  });
 
   const fetchInitiatives = async (params = {}) => {
     const query = new URLSearchParams(params).toString();
@@ -66,11 +70,64 @@ export default function InitiativesList() {
     fetchInitiatives();
   };
 
+  const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setSortConfig((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const sortedInitiatives = [...initiatives].sort((a, b) => {
+    if (!sortConfig.key) return 0;
+
+    let aValue: string | undefined = '';
+    let bValue: string | undefined = '';
+
+    if (sortConfig.key === 'domain') {
+      aValue = a.domain || '';
+      bValue = b.domain || '';
+    } else if (sortConfig.key === 'department') {
+      aValue = a.department || '';
+      bValue = b.department || '';
+    } else if (sortConfig.key === 'status') {
+      aValue = a.progressLogs?.[0]?.progressStatus || '';
+      bValue = b.progressLogs?.[0]?.progressStatus || '';
+    }
+
+    if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">施策一覧</h1>
       
       <div className="bg-gray-100 p-4 rounded mb-6">
+        <div className="mb-4 border-b border-gray-300 pb-4">
+          <h2 className="font-bold mb-2">並び替え</h2>
+          <div className="flex gap-4">
+            <select
+              name="key"
+              value={sortConfig.key}
+              onChange={handleSortChange}
+              className="border p-2 rounded"
+            >
+              <option value="">並び替えキーを選択</option>
+              <option value="domain">領域</option>
+              <option value="department">担当</option>
+              <option value="status">ステータス</option>
+            </select>
+            <select
+              name="direction"
+              value={sortConfig.direction}
+              onChange={handleSortChange}
+              className="border p-2 rounded"
+            >
+              <option value="asc">昇順</option>
+              <option value="desc">降順</option>
+            </select>
+          </div>
+        </div>
+
         <h2 className="font-bold mb-2">検索条件</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <select
@@ -134,7 +191,7 @@ export default function InitiativesList() {
         新規施策作成
       </Link>
       <div className="grid gap-4">
-        {initiatives.map((initiative) => (
+        {sortedInitiatives.map((initiative) => (
           <div key={initiative.id} className="border p-4 rounded shadow bg-white">
             <div className="flex justify-between items-start">
               <div>
