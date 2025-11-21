@@ -4,6 +4,8 @@ import { Initiative } from '@/types';
 
 export default function InitiativesList() {
   const [initiatives, setInitiatives] = useState<Initiative[]>([]);
+  const [domainOptions, setDomainOptions] = useState<string[]>([]);
+  const [departmentOptions, setDepartmentOptions] = useState<string[]>([]);
   const [searchParams, setSearchParams] = useState({
     domain: '',
     department: '',
@@ -11,15 +13,35 @@ export default function InitiativesList() {
     status: '',
   });
 
-  const fetchInitiatives = (params = {}) => {
+  const fetchInitiatives = async (params = {}) => {
     const query = new URLSearchParams(params).toString();
-    fetch(`/api/initiatives?${query}`)
-      .then((res) => res.json())
-      .then((data) => setInitiatives(data));
+    try {
+      const res = await fetch(`/api/initiatives?${query}`);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setInitiatives(data);
+        return data;
+      } else {
+        console.error('Failed to fetch initiatives:', data);
+        setInitiatives([]);
+        return [];
+      }
+    } catch (error) {
+      console.error('Error fetching initiatives:', error);
+      setInitiatives([]);
+      return [];
+    }
   };
 
   useEffect(() => {
-    fetchInitiatives();
+    fetchInitiatives().then((data) => {
+      if (data && data.length > 0) {
+        const domains = Array.from(new Set(data.map((i: Initiative) => i.domain).filter(Boolean))) as string[];
+        const departments = Array.from(new Set(data.map((i: Initiative) => i.department).filter(Boolean))) as string[];
+        setDomainOptions(domains);
+        setDepartmentOptions(departments);
+      }
+    });
   }, []);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -51,22 +73,32 @@ export default function InitiativesList() {
       <div className="bg-gray-100 p-4 rounded mb-6">
         <h2 className="font-bold mb-2">検索条件</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-          <input
-            type="text"
+          <select
             name="domain"
-            placeholder="ドメイン"
             value={searchParams.domain}
             onChange={handleSearchChange}
             className="border p-2 rounded"
-          />
-          <input
-            type="text"
+          >
+            <option value="">領域（全て）</option>
+            {domainOptions.map((domain) => (
+              <option key={domain} value={domain}>
+                {domain}
+              </option>
+            ))}
+          </select>
+          <select
             name="department"
-            placeholder="部署"
             value={searchParams.department}
             onChange={handleSearchChange}
             className="border p-2 rounded"
-          />
+          >
+            <option value="">担当（全て）</option>
+            {departmentOptions.map((dept) => (
+              <option key={dept} value={dept}>
+                {dept}
+              </option>
+            ))}
+          </select>
           <input
             type="text"
             name="measureName"
@@ -111,13 +143,18 @@ export default function InitiativesList() {
                     {initiative.measureName}
                   </Link>
                 </h2>
-                <p className="text-gray-600">ドメイン: {initiative.domain}</p>
-                <p className="text-gray-600">部署: {initiative.department}</p>
+                <p className="text-gray-600">領域: {initiative.domain}</p>
+                <p className="text-gray-600">担当: {initiative.department}</p>
               </div>
               {initiative.progressLogs && initiative.progressLogs.length > 0 && (
-                <span className="bg-gray-200 px-2 py-1 rounded text-sm">
-                  {initiative.progressLogs[0].progressStatus}
-                </span>
+                <div className="flex flex-col items-end gap-1">
+                  <span className="bg-gray-200 px-2 py-1 rounded text-sm">
+                    {initiative.progressLogs[0].progressStatus}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {initiative.progressLogs[0].fiscalYear}年 {initiative.progressLogs[0].fiscalQuarter}Q
+                  </span>
+                </div>
               )}
             </div>
           </div>
