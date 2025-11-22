@@ -8,9 +8,12 @@ export default async function handler(
 ) {
   if (req.method === 'GET') {
     try {
-      const { domain, department, measureName, status } = req.query;
+      console.log('GET /api/initiatives query:', req.query);
+      const { domain, department, measureName, status, deleted } = req.query;
 
-      const where: Prisma.InitiativeWhereInput = {};
+      const where: Prisma.InitiativeWhereInput = {
+        isActive: deleted === 'true' ? false : true,
+      };
 
       if (domain) {
         where.domain = { contains: domain as string, mode: 'insensitive' };

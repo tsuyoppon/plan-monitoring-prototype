@@ -16,8 +16,14 @@ export default function InitiativesList() {
     key: '',
     direction: 'asc',
   });
+  const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
 
-  const fetchInitiatives = async (params = {}) => {
+  const fetchInitiatives = async (params: any = {}) => {
+    // If showing deleted items, add deleted=true to params
+    if (showDeleted) {
+      params.deleted = 'true';
+    }
     const query = new URLSearchParams(params).toString();
     try {
       const res = await fetch(`/api/initiatives?${query}`);
@@ -38,15 +44,8 @@ export default function InitiativesList() {
   };
 
   useEffect(() => {
-    fetchInitiatives().then((data) => {
-      if (data && data.length > 0) {
-        const domains = Array.from(new Set(data.map((i: Initiative) => i.domain).filter(Boolean))) as string[];
-        const departments = Array.from(new Set(data.map((i: Initiative) => i.department).filter(Boolean))) as string[];
-        setDomainOptions(domains);
-        setDepartmentOptions(departments);
-      }
-    });
-  }, []);
+    fetchInitiatives();
+  }, [showDeleted]); // Re-fetch when showDeleted changes
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setSearchParams({ ...searchParams, [e.target.name]: e.target.value });
@@ -67,7 +66,54 @@ export default function InitiativesList() {
       measureName: '',
       status: '',
     });
-    fetchInitiatives();
+    // We need to pass empty params explicitly, but fetchInitiatives handles showDeleted internally
+    fetchInitiatives({});
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('本当にこの施策を削除しますか？')) return;
+    try {
+      const res = await fetch(`/api/initiatives/${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        fetchInitiatives(searchParams);
+      } else {
+        alert('削除に失敗しました');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('削除に失敗しました');
+    }
+  };
+
+  const handleRestore = async (id: number) => {
+    if (!confirm('この施策を復元しますか？')) return;
+    try {
+      const res = await fetch(`/api/initiatives/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: true }),
+      });
+      if (res.ok) {
+        fetchInitiatives(searchParams);
+      } else {
+        alert('復元に失敗しました');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('復元に失敗しました');
+    }
+  };
+
+  const toggleDeleteMode = () => {
+    setIsDeleteMode(!isDeleteMode);
+    setShowDeleted(false); // Exit trash view if entering delete mode
+  };
+
+  const toggleTrashView = () => {
+    setShowDeleted(!showDeleted);
+    setIsDeleteMode(false); // Exit delete mode if entering trash view
   };
 
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -99,7 +145,31 @@ export default function InitiativesList() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">施策一覧</h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">
+          {showDeleted ? 'ゴミ箱（削除済み施策）' : '施策一覧'}
+        </h1>
+        <div className="flex gap-2">
+          {!showDeleted && (
+            <button
+              onClick={toggleDeleteMode}
+              className={`px-4 py-2 rounded text-white ${
+                isDeleteMode ? 'bg-red-600' : 'bg-gray-500 hover:bg-gray-600'
+              }`}
+            >
+              {isDeleteMode ? '削除モード終了' : '施策の削除'}
+            </button>
+          )}
+          <button
+            onClick={toggleTrashView}
+            className={`px-4 py-2 rounded text-white ${
+              showDeleted ? 'bg-blue-600' : 'bg-gray-500 hover:bg-gray-600'
+            }`}
+          >
+            {showDeleted ? '一覧に戻る' : 'ゴミ箱を見る'}
+          </button>
+        </div>
+      </div>
       
       <div className="bg-gray-100 p-4 rounded mb-6">
         <div className="mb-4 border-b border-gray-300 pb-4">
@@ -192,7 +262,23 @@ export default function InitiativesList() {
       </Link>
       <div className="grid gap-4">
         {sortedInitiatives.map((initiative) => (
-          <div key={initiative.id} className="border p-4 rounded shadow bg-white">
+          <div key={initiative.id} className="border p-4 rounded shadow bg-white relative">
+            {isDeleteMode && !showDeleted && (
+              <button
+                onClick={() => handleDelete(initiative.id)}
+                className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 z-10"
+              >
+                削除
+              </button>
+            )}
+            {showDeleted && (
+              <button
+                onClick={() => handleRestore(initiative.id)}
+                className="absolute top-4 right-4 bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 z-10"
+              >
+                復元
+              </button>
+            )}
             <div className="flex justify-between items-start">
               <div>
                 <h2 className="text-xl font-semibold">

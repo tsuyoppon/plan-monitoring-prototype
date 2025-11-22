@@ -60,8 +60,19 @@ export default async function handler(
       console.error(error);
       res.status(500).json({ error: 'Failed to update initiative' });
     }
+  } else if (req.method === 'DELETE') {
+    try {
+      const initiative = await prisma.initiative.update({
+        where: { id: initiativeId },
+        data: { isActive: false },
+      });
+      res.status(200).json(initiative);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to delete initiative' });
+    }
   } else {
-    res.setHeader('Allow', ['GET', 'PUT']);
+    res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
