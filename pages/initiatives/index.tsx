@@ -25,11 +25,25 @@ export default function InitiativesList() {
       params.deleted = 'true';
     }
     const query = new URLSearchParams(params).toString();
+    console.log('Fetching initiatives with params:', params); // Debug log
+
     try {
       const res = await fetch(`/api/initiatives?${query}`);
       const data = await res.json();
       if (Array.isArray(data)) {
         setInitiatives(data);
+
+        // Update options only when fetching full list (no search filters)
+        // Check if any search related keys are present in the original params
+        // Note: 'deleted' is a view mode, not a search filter for this purpose
+        const { deleted, ...searchFilters } = params;
+        if (Object.keys(searchFilters).length === 0) {
+          const uniqueDomains = Array.from(new Set(data.map((item: Initiative) => item.domain).filter(Boolean))) as string[];
+          const uniqueDepartments = Array.from(new Set(data.map((item: Initiative) => item.department).filter(Boolean))) as string[];
+          setDomainOptions(uniqueDomains);
+          setDepartmentOptions(uniqueDepartments);
+        }
+
         return data;
       } else {
         console.error('Failed to fetch initiatives:', data);
