@@ -5,11 +5,11 @@ export default function Home() {
     <div className="flex flex-col items-center justify-center min-h-screen py-2">
       <main className="flex flex-col items-center justify-center w-full flex-1 px-20 text-center">
         <h1 className="text-6xl font-bold">
-          Plan Monitoring Prototype
+          日本バドミントン協会中期計画
         </h1>
 
         <p className="mt-3 text-2xl">
-          施策管理と進捗ログ管理
+          進捗確認ポータル(β版）
         </p>
 
         <div className="mt-6">
