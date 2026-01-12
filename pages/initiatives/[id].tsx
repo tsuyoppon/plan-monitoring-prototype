@@ -31,16 +31,16 @@ export default function InitiativeDetail() {
           <div><span className="font-bold">ドメイン:</span> {initiative.domain}</div>
           <div><span className="font-bold">部署:</span> {initiative.department}</div>
           <div><span className="font-bold">期間:</span> {initiative.startDate?.split('T')[0]} 〜 {initiative.endDate?.split('T')[0]}</div>
-          <div><span className="font-bold">KPI:</span> {initiative.kpi}</div>
           <div className="col-span-2"><span className="font-bold">詳細:</span> {initiative.detail}</div>
           <div className="col-span-2"><span className="font-bold">ゴール:</span> {initiative.goal}</div>
+          <div className="col-span-2"><span className="font-bold">KPI:</span> {initiative.kpi}</div>
           <div className="col-span-2"><span className="font-bold">スケジュール詳細:</span> {initiative.scheduleText}</div>
         </div>
       </div>
 
       <div className="bg-white shadow rounded p-6">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">進捗（四半期別・最新のみ）</h2>
+          <h2 className="text-xl font-semibold">進捗（四半期別）</h2>
           <Link href={`/initiatives/${initiative.id}/progress/new`} className="bg-green-500 text-white px-4 py-2 rounded">
             進捗を追加
           </Link>
@@ -52,7 +52,7 @@ export default function InitiativeDetail() {
               <div key={log.id} className="border rounded p-4">
                 <div className="mb-2"><span className="font-bold">年度/四半期:</span> {log.fiscalYear}年度 Q{log.fiscalQuarter}</div>
                 <div><span className="font-bold">ステータス:</span> {log.progressStatus}</div>
-                <div><span className="font-bold">評価:</span> {log.progressEvaluation}</div>
+                <div><span className="font-bold">進捗:</span> {log.progressEvaluation}</div>
                 <div><span className="font-bold">次のアクション:</span> {log.nextAction}</div>
                 <div><span className="font-bold">期限:</span> {log.nextActionDueDate?.split('T')[0]}</div>
               </div>
