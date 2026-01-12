@@ -165,6 +165,14 @@ export default function InitiativesList() {
         </h1>
         <div className="flex gap-2">
           {!showDeleted && (
+            <Link
+              href="/initiatives/summary"
+              className="px-4 py-2 rounded text-white bg-blue-600 hover:bg-blue-700"
+            >
+              進捗状況まとめ
+            </Link>
+          )}
+          {!showDeleted && (
             <button
               onClick={toggleDeleteMode}
               className={`px-4 py-2 rounded text-white ${
