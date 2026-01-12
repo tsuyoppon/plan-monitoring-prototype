@@ -12,9 +12,12 @@ export default function Home() {
           施策管理と進捗ログ管理
         </p>
 
-        <div className="mt-6">
+        <div className="mt-6 flex flex-col gap-2">
           <Link href="/initiatives" className="text-blue-600 hover:underline text-xl">
             施策一覧へ &rarr;
+          </Link>
+          <Link href="/initiatives/summary" className="text-blue-600 hover:underline text-xl">
+            進捗状況まとめへ &rarr;
           </Link>
         </div>
       </main>
