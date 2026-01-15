@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Initiative } from '@/types';
+
+type FetchParams = Record<string, string>;
 
 export default function InitiativesList() {
   const [initiatives, setInitiatives] = useState<Initiative[]>([]);
@@ -19,13 +21,14 @@ export default function InitiativesList() {
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
 
-  const fetchInitiatives = async (params: any = {}) => {
+  const fetchInitiatives = useCallback(async (params: FetchParams = {}) => {
+    const requestParams = { ...params };
     // If showing deleted items, add deleted=true to params
     if (showDeleted) {
-      params.deleted = 'true';
+      requestParams.deleted = 'true';
     }
-    const query = new URLSearchParams(params).toString();
-    console.log('Fetching initiatives with params:', params); // Debug log
+    const query = new URLSearchParams(requestParams).toString();
+    console.log('Fetching initiatives with params:', requestParams); // Debug log
 
     try {
       const res = await fetch(`/api/initiatives?${query}`);
@@ -36,7 +39,8 @@ export default function InitiativesList() {
         // Update options only when fetching full list (no search filters)
         // Check if any search related keys are present in the original params
         // Note: 'deleted' is a view mode, not a search filter for this purpose
-        const { deleted, ...searchFilters } = params;
+        const searchFilters = { ...requestParams };
+        delete searchFilters.deleted;
         if (Object.keys(searchFilters).length === 0) {
           const uniqueDomains = Array.from(new Set(data.map((item: Initiative) => item.domain).filter(Boolean))) as string[];
           const uniqueDepartments = Array.from(new Set(data.map((item: Initiative) => item.department).filter(Boolean))) as string[];
@@ -55,11 +59,12 @@ export default function InitiativesList() {
       setInitiatives([]);
       return [];
     }
-  };
+  }, [showDeleted]);
 
   useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchInitiatives();
-  }, [showDeleted]); // Re-fetch when showDeleted changes
+  }, [fetchInitiatives]); // Re-fetch when showDeleted changes
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setSearchParams({ ...searchParams, [e.target.name]: e.target.value });
@@ -68,7 +73,7 @@ export default function InitiativesList() {
   const handleSearch = () => {
     // Remove empty params
     const params = Object.fromEntries(
-      Object.entries(searchParams).filter(([_, v]) => v !== '')
+      Object.entries(searchParams).filter(([, value]) => value !== '')
     );
     fetchInitiatives(params);
   };
