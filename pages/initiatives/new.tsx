@@ -73,7 +73,16 @@ export default function NewInitiative() {
           <label className="block mb-1">スケジュール詳細</label>
           <textarea name="scheduleText" value={formData.scheduleText} onChange={handleChange} className="border w-full p-2" />
         </div>
-        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">作成</button>
+        <div className="flex items-center gap-2">
+          <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">作成</button>
+          <button
+            type="button"
+            onClick={() => router.push('/initiatives')}
+            className="border border-gray-300 px-4 py-2 rounded"
+          >
+            施策一覧へ戻る
+          </button>
+        </div>
       </form>
     </div>
   );
