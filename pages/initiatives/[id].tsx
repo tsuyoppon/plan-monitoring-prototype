@@ -26,7 +26,15 @@ export default function InitiativeDetail() {
       <h1 className="text-2xl font-bold mb-4">{initiative.measureName}</h1>
       
       <div className="bg-white shadow rounded p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">基本情報</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">基本情報</h2>
+          <Link
+            href={`/initiatives/${initiative.id}/edit`}
+            className="bg-blue-500 text-white px-4 py-2 rounded"
+          >
+            基本情報を編集
+          </Link>
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <div><span className="font-bold">ドメイン:</span> {initiative.domain}</div>
           <div><span className="font-bold">部署:</span> {initiative.department}</div>
