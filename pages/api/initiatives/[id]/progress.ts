@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { Prisma } from '@/generated/client/client';
 import prisma from '@/lib/prisma';
+import { normalizeProgressLogInput, validateProgressLog } from '@/lib/progressValidation';
 
 export default async function handler(
   req: NextApiRequest,
@@ -37,7 +38,18 @@ export default async function handler(
         progressEvaluation,
         nextAction,
         nextActionDueDate,
-      } = req.body;
+      } = normalizeProgressLogInput(req.body);
+      const validationErrors = validateProgressLog({
+        fiscalYear,
+        fiscalQuarter,
+        progressStatus,
+        progressEvaluation,
+        nextAction,
+        nextActionDueDate,
+      });
+      if (Object.keys(validationErrors).length > 0) {
+        return res.status(400).json({ errors: validationErrors });
+      }
 
       // トランザクションで処理
       const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -91,8 +103,59 @@ export default async function handler(
       console.error(error);
       res.status(500).json({ error: 'Failed to create progress log' });
     }
+  } else if (req.method === 'PUT') {
+    try {
+      const { logId, ...rawBody } = req.body ?? {};
+      const progressLogId = Number(logId);
+      if (!Number.isInteger(progressLogId)) {
+        return res.status(400).json({ error: 'Invalid log ID' });
+      }
+      const {
+        fiscalYear,
+        fiscalQuarter,
+        progressStatus,
+        progressEvaluation,
+        nextAction,
+        nextActionDueDate,
+      } = normalizeProgressLogInput(rawBody);
+      const validationErrors = validateProgressLog({
+        fiscalYear,
+        fiscalQuarter,
+        progressStatus,
+        progressEvaluation,
+        nextAction,
+        nextActionDueDate,
+      });
+      if (Object.keys(validationErrors).length > 0) {
+        return res.status(400).json({ errors: validationErrors });
+      }
+
+      const existingLog = await prisma.progressLog.findFirst({
+        where: { id: progressLogId, initiativeId },
+      });
+      if (!existingLog) {
+        return res.status(404).json({ error: 'Progress log not found' });
+      }
+
+      const updatedLog = await prisma.progressLog.update({
+        where: { id: progressLogId },
+        data: {
+          fiscalYear,
+          fiscalQuarter,
+          progressStatus,
+          progressEvaluation,
+          nextAction,
+          nextActionDueDate: nextActionDueDate ? new Date(nextActionDueDate) : null,
+        },
+      });
+
+      res.status(200).json(updatedLog);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to update progress log' });
+    }
   } else {
-    res.setHeader('Allow', ['GET', 'POST']);
+    res.setHeader('Allow', ['GET', 'POST', 'PUT']);
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
