@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import {
   MAX_NEXT_ACTION_LENGTH,
   MAX_PROGRESS_EVALUATION_LENGTH,
@@ -8,9 +9,12 @@ import {
   ProgressLogFormErrors,
   validateProgressLog,
 } from '@/lib/progressValidation';
+import { canEditRole } from '@/types/auth';
 import { Initiative, ProgressLog } from '@/types';
 
 export default function InitiativeDetail() {
+  const { data: session } = useSession();
+  const canEdit = canEditRole(session?.user.role);
   const router = useRouter();
   const { id } = router.query;
   const [initiative, setInitiative] = useState<Initiative | null>(null);
@@ -104,12 +108,14 @@ export default function InitiativeDetail() {
       <div className="bg-white shadow rounded p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">基本情報</h2>
-          <Link
-            href={`/initiatives/${initiative.id}/edit`}
-            className="bg-blue-500 text-white px-4 py-2 rounded"
-          >
-            基本情報を編集
-          </Link>
+          {canEdit && (
+            <Link
+              href={`/initiatives/${initiative.id}/edit`}
+              className="bg-blue-500 text-white px-4 py-2 rounded"
+            >
+              基本情報を編集
+            </Link>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div><span className="font-bold">ドメイン:</span> {initiative.domain}</div>
@@ -125,9 +131,11 @@ export default function InitiativeDetail() {
       <div className="bg-white shadow rounded p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">進捗（四半期別）</h2>
-          <Link href={`/initiatives/${initiative.id}/progress/new`} className="bg-green-500 text-white px-4 py-2 rounded">
-            進捗を追加
-          </Link>
+          {canEdit && (
+            <Link href={`/initiatives/${initiative.id}/progress/new`} className="bg-green-500 text-white px-4 py-2 rounded">
+              進捗を追加
+            </Link>
+          )}
         </div>
 
         {progressLogs.length > 0 ? (
@@ -243,13 +251,15 @@ export default function InitiativeDetail() {
                   <>
                     <div className="flex justify-between items-center mb-2">
                       <div><span className="font-bold">年度/四半期:</span> {log.fiscalYear}年度 Q{log.fiscalQuarter}</div>
-                      <button
-                        type="button"
-                        onClick={() => startEdit(log)}
-                        className="text-sm text-blue-500 hover:underline"
-                      >
-                        編集
-                      </button>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => startEdit(log)}
+                          className="text-sm text-blue-500 hover:underline"
+                        >
+                          編集
+                        </button>
+                      )}
                     </div>
                     <div><span className="font-bold">ステータス:</span> {log.progressStatus}</div>
                     <div className="whitespace-pre-wrap"><span className="font-bold">進捗:</span> {log.progressEvaluation}</div>

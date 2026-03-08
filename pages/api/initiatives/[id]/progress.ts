@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { Prisma } from '@/generated/client/client';
+import { requireRole } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { normalizeProgressLogInput, validateProgressLog } from '@/lib/progressValidation';
 
@@ -7,6 +8,18 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  if (req.method === 'GET') {
+    const session = await requireRole(req, res, ['viewer', 'editor', 'admin']);
+    if (!session) {
+      return;
+    }
+  } else if (req.method === 'POST' || req.method === 'PUT') {
+    const session = await requireRole(req, res, ['editor', 'admin']);
+    if (!session) {
+      return;
+    }
+  }
+
   const { id } = req.query;
   const initiativeId = parseInt(id as string);
 

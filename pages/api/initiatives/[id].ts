@@ -1,10 +1,23 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { requireRole } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  if (req.method === 'GET') {
+    const session = await requireRole(req, res, ['viewer', 'editor', 'admin']);
+    if (!session) {
+      return;
+    }
+  } else if (req.method === 'PUT' || req.method === 'DELETE') {
+    const session = await requireRole(req, res, ['editor', 'admin']);
+    if (!session) {
+      return;
+    }
+  }
+
   const { id } = req.query;
   const initiativeId = parseInt(id as string);
 

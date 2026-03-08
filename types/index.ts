@@ -28,3 +28,14 @@ export interface ProgressLog {
   isLatest: boolean;
   createdAt: string;
 }
+
+export type UserRole = 'viewer' | 'editor' | 'admin';
+
+export interface AppUser {
+  id: number;
+  email: string;
+  displayName?: string | null;
+  department?: string | null;
+  role: UserRole;
+  isActive: boolean;
+}

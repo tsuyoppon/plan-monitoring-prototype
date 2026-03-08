@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+
+import { canEditRole } from '@/types/auth';
 import { Initiative } from '@/types';
 
 type FetchParams = Record<string, string>;
 
 export default function InitiativesList() {
+  const { data: session } = useSession();
+  const canEdit = canEditRole(session?.user.role);
   const [initiatives, setInitiatives] = useState<Initiative[]>([]);
   const [domainOptions, setDomainOptions] = useState<string[]>([]);
   const [departmentOptions, setDepartmentOptions] = useState<string[]>([]);
@@ -177,7 +182,7 @@ export default function InitiativesList() {
               進捗状況まとめ
             </Link>
           )}
-          {!showDeleted && (
+          {!showDeleted && canEdit && (
             <button
               onClick={toggleDeleteMode}
               className={`px-4 py-2 rounded text-white ${
@@ -284,13 +289,15 @@ export default function InitiativesList() {
         </div>
       </div>
 
-      <Link href="/initiatives/new" className="bg-green-500 text-white px-4 py-2 rounded mb-4 inline-block">
-        新規施策作成
-      </Link>
+      {canEdit && (
+        <Link href="/initiatives/new" className="bg-green-500 text-white px-4 py-2 rounded mb-4 inline-block">
+          新規施策作成
+        </Link>
+      )}
       <div className="grid gap-4">
         {sortedInitiatives.map((initiative) => (
           <div key={initiative.id} className="border p-4 rounded shadow bg-white relative">
-            {isDeleteMode && !showDeleted && (
+            {canEdit && isDeleteMode && !showDeleted && (
               <button
                 onClick={() => handleDelete(initiative.id)}
                 className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 z-10"
@@ -298,7 +305,7 @@ export default function InitiativesList() {
                 削除
               </button>
             )}
-            {showDeleted && (
+            {canEdit && showDeleted && (
               <button
                 onClick={() => handleRestore(initiative.id)}
                 className="absolute top-4 right-4 bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 z-10"

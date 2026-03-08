@@ -39,7 +39,6 @@ export default function EditInitiative() {
 
   useEffect(() => {
     if (!id) return;
-    setIsLoading(true);
     fetch(`/api/initiatives/${id}`)
       .then((res) => res.json())
       .then((data) => {
