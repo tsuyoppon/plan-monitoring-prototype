@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 
@@ -9,17 +9,37 @@ type ApiError = {
   error?: string;
 };
 
+type CreateUserForm = {
+  email: string;
+  password: string;
+  displayName: string;
+  department: string;
+  role: AppRole;
+};
+
+const initialCreateUserForm: CreateUserForm = {
+  email: '',
+  password: '',
+  displayName: '',
+  department: '',
+  role: 'viewer',
+};
+
 export default function AdminUsersPage() {
   const { data: session } = useSession();
   const [users, setUsers] = useState<AppUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingById, setIsSavingById] = useState<Record<number, boolean>>({});
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [createForm, setCreateForm] = useState<CreateUserForm>(initialCreateUserForm);
 
   const myUserId = session?.user.id;
 
   const fetchUsers = useCallback(async () => {
     setErrorMessage('');
+    setSuccessMessage('');
     setIsLoading(true);
 
     try {
@@ -48,6 +68,7 @@ export default function AdminUsersPage() {
 
   const updateUser = async (id: number, payload: Partial<Pick<AppUser, 'role' | 'isActive'>>) => {
     setErrorMessage('');
+    setSuccessMessage('');
     setIsSavingById((prev) => ({ ...prev, [id]: true }));
 
     try {
@@ -71,6 +92,57 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleCreateChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = event.target;
+    setCreateForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const createUser = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    if (!createForm.email.trim() || !createForm.password.trim()) {
+      setErrorMessage('メールアドレスとパスワードは必須です。');
+      return;
+    }
+
+    if (createForm.password.length < 8) {
+      setErrorMessage('パスワードは8文字以上で入力してください。');
+      return;
+    }
+
+    setIsCreatingUser(true);
+
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: createForm.email.trim(),
+          password: createForm.password,
+          displayName: createForm.displayName.trim() || null,
+          department: createForm.department.trim() || null,
+          role: createForm.role,
+        }),
+      });
+
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => ({}))) as ApiError;
+        throw new Error(payload.error ?? 'ユーザー作成に失敗しました。');
+      }
+
+      const createdUser = (await res.json()) as AppUser;
+      setUsers((prev) => [...prev, createdUser]);
+      setCreateForm(initialCreateUserForm);
+      setSuccessMessage('ユーザーを作成しました。');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'ユーザー作成に失敗しました。');
+    } finally {
+      setIsCreatingUser(false);
+    }
+  };
+
   if (isLoading) {
     return <div className="p-4">Loading...</div>;
   }
@@ -88,6 +160,85 @@ export default function AdminUsersPage() {
       </div>
 
       {errorMessage && <p className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{errorMessage}</p>}
+      {successMessage && <p className="mb-4 rounded border border-green-200 bg-green-50 p-3 text-sm text-green-700">{successMessage}</p>}
+
+      <div className="mb-6 rounded border bg-white p-4">
+        <h2 className="mb-3 text-lg font-semibold">ユーザー新規作成</h2>
+        <form onSubmit={createUser} className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <label className="text-sm">
+            <span className="mb-1 block text-gray-700">メールアドレス *</span>
+            <input
+              type="email"
+              name="email"
+              value={createForm.email}
+              onChange={handleCreateChange}
+              className="w-full rounded border px-3 py-2"
+              required
+            />
+          </label>
+
+          <label className="text-sm">
+            <span className="mb-1 block text-gray-700">パスワード *</span>
+            <input
+              type="password"
+              name="password"
+              value={createForm.password}
+              onChange={handleCreateChange}
+              className="w-full rounded border px-3 py-2"
+              minLength={8}
+              required
+            />
+          </label>
+
+          <label className="text-sm">
+            <span className="mb-1 block text-gray-700">表示名</span>
+            <input
+              type="text"
+              name="displayName"
+              value={createForm.displayName}
+              onChange={handleCreateChange}
+              className="w-full rounded border px-3 py-2"
+            />
+          </label>
+
+          <label className="text-sm">
+            <span className="mb-1 block text-gray-700">部署</span>
+            <input
+              type="text"
+              name="department"
+              value={createForm.department}
+              onChange={handleCreateChange}
+              className="w-full rounded border px-3 py-2"
+            />
+          </label>
+
+          <label className="text-sm md:col-span-2">
+            <span className="mb-1 block text-gray-700">ロール</span>
+            <select
+              name="role"
+              value={createForm.role}
+              onChange={handleCreateChange}
+              className="w-full rounded border px-3 py-2 md:w-48"
+            >
+              {APP_ROLES.map((role) => (
+                <option key={role} value={role}>
+                  {role}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="md:col-span-2">
+            <button
+              type="submit"
+              disabled={isCreatingUser}
+              className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isCreatingUser ? '作成中...' : 'ユーザーを作成'}
+            </button>
+          </div>
+        </form>
+      </div>
 
       <div className="overflow-x-auto rounded border bg-white">
         <table className="min-w-full text-sm">
