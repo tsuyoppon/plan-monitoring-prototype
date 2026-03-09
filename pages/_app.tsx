@@ -19,6 +19,7 @@ function AppContent({ Component, pageProps }: AppContentProps) {
     '/initiatives/[id]/edit',
     '/initiatives/[id]/progress/new',
   ].includes(router.pathname);
+  const requiresAdminRole = ['/admin/users'].includes(router.pathname);
 
   useEffect(() => {
     if (status === 'unauthenticated' && !isLoginPage) {
@@ -29,8 +30,13 @@ function AppContent({ Component, pageProps }: AppContentProps) {
 
     if (status === 'authenticated' && requiresEditorRole && !canEditRole(session?.user.role)) {
       router.replace('/initiatives');
+      return;
     }
-  }, [status, isLoginPage, requiresEditorRole, session?.user.role, router]);
+
+    if (status === 'authenticated' && requiresAdminRole && session?.user.role !== 'admin') {
+      router.replace('/initiatives');
+    }
+  }, [status, isLoginPage, requiresEditorRole, requiresAdminRole, session?.user.role, router]);
 
   if (!isLoginPage && status === 'loading') {
     return <div className="p-4">Loading...</div>;
@@ -49,6 +55,11 @@ function AppContent({ Component, pageProps }: AppContentProps) {
               Plan Monitoring
             </Link>
             <div className="flex items-center gap-3 text-sm">
+              {session.user.role === 'admin' && (
+                <Link href="/admin/users" className="rounded border px-3 py-1 hover:bg-gray-100">
+                  ユーザー管理
+                </Link>
+              )}
               <span className="text-gray-700">
                 {session.user.displayName || session.user.email} ({session.user.role})
               </span>
