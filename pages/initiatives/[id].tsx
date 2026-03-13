@@ -118,13 +118,13 @@ export default function InitiativeDetail() {
           )}
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <div><span className="font-bold">ドメイン:</span> {initiative.domain}</div>
-          <div><span className="font-bold">部署:</span> {initiative.department}</div>
-          <div><span className="font-bold">期間:</span> {initiative.startDate?.split('T')[0]} 〜 {initiative.endDate?.split('T')[0]}</div>
+          <div><span className="font-bold">テーマ:</span> {initiative.domain}</div>
+          <div><span className="font-bold">担当:</span> {initiative.department}</div>
+          <div><span className="font-bold">開始・完了:</span> {initiative.startDate?.split('T')[0]} 〜 {initiative.endDate?.split('T')[0]}</div>
           <div className="col-span-2 whitespace-pre-wrap"><span className="font-bold">詳細:</span> {initiative.detail}</div>
           <div className="col-span-2 whitespace-pre-wrap"><span className="font-bold">ゴール:</span> {initiative.goal}</div>
           <div className="col-span-2 whitespace-pre-wrap"><span className="font-bold">KPI:</span> {initiative.kpi}</div>
-          <div className="col-span-2 whitespace-pre-wrap"><span className="font-bold">スケジュール詳細:</span> {initiative.scheduleText}</div>
+          <div className="col-span-2 whitespace-pre-wrap"><span className="font-bold">スケジュール:</span> {initiative.scheduleText}</div>
         </div>
       </div>
 

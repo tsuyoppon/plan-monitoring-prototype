@@ -38,7 +38,7 @@ export default function NewInitiative() {
       <h1 className="text-2xl font-bold mb-4">新規施策作成</h1>
       <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
         <div>
-          <label className="block mb-1">ドメイン</label>
+          <label className="block mb-1">テーマ</label>
           <input name="domain" value={formData.domain} onChange={handleChange} className="border w-full p-2" required />
         </div>
         <div>
@@ -58,19 +58,19 @@ export default function NewInitiative() {
           <input name="kpi" value={formData.kpi} onChange={handleChange} className="border w-full p-2" />
         </div>
         <div>
-          <label className="block mb-1">開始日</label>
+          <label className="block mb-1">開始</label>
           <input type="date" name="startDate" value={formData.startDate} onChange={handleChange} className="border w-full p-2" />
         </div>
         <div>
-          <label className="block mb-1">終了日</label>
+          <label className="block mb-1">完了</label>
           <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} className="border w-full p-2" />
         </div>
         <div>
-          <label className="block mb-1">部署</label>
+          <label className="block mb-1">担当</label>
           <input name="department" value={formData.department} onChange={handleChange} className="border w-full p-2" />
         </div>
         <div>
-          <label className="block mb-1">スケジュール詳細</label>
+          <label className="block mb-1">スケジュール</label>
           <textarea name="scheduleText" value={formData.scheduleText} onChange={handleChange} className="border w-full p-2" />
         </div>
         <div className="flex items-center gap-2">
