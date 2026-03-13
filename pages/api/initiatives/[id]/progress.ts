@@ -50,7 +50,6 @@ export default async function handler(
         progressStatus,
         progressEvaluation,
         nextAction,
-        nextActionDueDate,
       } = normalizeProgressLogInput(req.body);
       const validationErrors = validateProgressLog({
         fiscalYear,
@@ -58,7 +57,6 @@ export default async function handler(
         progressStatus,
         progressEvaluation,
         nextAction,
-        nextActionDueDate,
       });
       if (Object.keys(validationErrors).length > 0) {
         return res.status(400).json({ errors: validationErrors });
@@ -102,7 +100,6 @@ export default async function handler(
             progressStatus,
             progressEvaluation,
             nextAction,
-            nextActionDueDate: nextActionDueDate ? new Date(nextActionDueDate) : null,
             versionNo: nextVersionNo,
             isLatest: true,
           },
@@ -129,7 +126,6 @@ export default async function handler(
         progressStatus,
         progressEvaluation,
         nextAction,
-        nextActionDueDate,
       } = normalizeProgressLogInput(rawBody);
       const validationErrors = validateProgressLog({
         fiscalYear,
@@ -137,7 +133,6 @@ export default async function handler(
         progressStatus,
         progressEvaluation,
         nextAction,
-        nextActionDueDate,
       });
       if (Object.keys(validationErrors).length > 0) {
         return res.status(400).json({ errors: validationErrors });
@@ -158,7 +153,6 @@ export default async function handler(
           progressStatus,
           progressEvaluation,
           nextAction,
-          nextActionDueDate: nextActionDueDate ? new Date(nextActionDueDate) : null,
         },
       });
 

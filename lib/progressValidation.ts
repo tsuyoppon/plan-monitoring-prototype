@@ -4,7 +4,6 @@ export type ProgressLogFormData = {
   progressStatus: string;
   progressEvaluation: string;
   nextAction: string;
-  nextActionDueDate: string;
 };
 
 export type ProgressLogFormErrors = Partial<Record<keyof ProgressLogFormData, string>>;
@@ -13,28 +12,18 @@ export const MAX_PROGRESS_STATUS_LENGTH = 50;
 export const MAX_PROGRESS_EVALUATION_LENGTH = 2000;
 export const MAX_NEXT_ACTION_LENGTH = 1000;
 
-const isValidDateString = (value: string) => {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return false;
-  }
-  const date = new Date(value);
-  return !Number.isNaN(date.getTime());
-};
-
 export const normalizeProgressLogInput = (input: {
   fiscalYear: number | string;
   fiscalQuarter: number | string;
   progressStatus?: string;
   progressEvaluation?: string;
   nextAction?: string;
-  nextActionDueDate?: string;
 }): ProgressLogFormData => ({
   fiscalYear: typeof input.fiscalYear === 'string' ? Number(input.fiscalYear) : input.fiscalYear,
   fiscalQuarter: typeof input.fiscalQuarter === 'string' ? Number(input.fiscalQuarter) : input.fiscalQuarter,
   progressStatus: input.progressStatus ?? '',
   progressEvaluation: input.progressEvaluation ?? '',
   nextAction: input.nextAction ?? '',
-  nextActionDueDate: input.nextActionDueDate ?? '',
 });
 
 export const validateProgressLog = (data: ProgressLogFormData): ProgressLogFormErrors => {
@@ -49,27 +38,21 @@ export const validateProgressLog = (data: ProgressLogFormData): ProgressLogFormE
   }
 
   if (!data.progressStatus.trim()) {
-    errors.progressStatus = '進捗ステータスは必須です。';
+    errors.progressStatus = '状況は必須です。';
   } else if (data.progressStatus.length > MAX_PROGRESS_STATUS_LENGTH) {
-    errors.progressStatus = `進捗ステータスは${MAX_PROGRESS_STATUS_LENGTH}文字以内で入力してください。`;
+    errors.progressStatus = `状況は${MAX_PROGRESS_STATUS_LENGTH}文字以内で入力してください。`;
   }
 
   if (!data.progressEvaluation.trim()) {
-    errors.progressEvaluation = '進捗評価・詳細は必須です。';
+    errors.progressEvaluation = '進捗は必須です。';
   } else if (data.progressEvaluation.length > MAX_PROGRESS_EVALUATION_LENGTH) {
-    errors.progressEvaluation = `進捗評価・詳細は${MAX_PROGRESS_EVALUATION_LENGTH}文字以内で入力してください。`;
+    errors.progressEvaluation = `進捗は${MAX_PROGRESS_EVALUATION_LENGTH}文字以内で入力してください。`;
   }
 
   if (!data.nextAction.trim()) {
-    errors.nextAction = '次のアクションは必須です。';
+    errors.nextAction = '今後のアクションは必須です。';
   } else if (data.nextAction.length > MAX_NEXT_ACTION_LENGTH) {
-    errors.nextAction = `次のアクションは${MAX_NEXT_ACTION_LENGTH}文字以内で入力してください。`;
-  }
-
-  if (!data.nextActionDueDate.trim()) {
-    errors.nextActionDueDate = 'アクション期限は必須です。';
-  } else if (!isValidDateString(data.nextActionDueDate)) {
-    errors.nextActionDueDate = 'アクション期限を正しい日付形式で入力してください。';
+    errors.nextAction = `今後のアクションは${MAX_NEXT_ACTION_LENGTH}文字以内で入力してください。`;
   }
 
   return errors;

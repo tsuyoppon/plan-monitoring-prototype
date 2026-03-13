@@ -17,7 +17,6 @@ export default function NewProgressLog() {
     progressStatus: '',
     progressEvaluation: '',
     nextAction: '',
-    nextActionDueDate: '',
   });
   const [errors, setErrors] = useState<ProgressLogFormErrors>({});
 
@@ -49,7 +48,7 @@ export default function NewProgressLog() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">進捗ログ追加</h1>
+      <h1 className="text-2xl font-bold mb-4">進捗状況入力</h1>
       <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
         <div className="flex gap-4">
           <div className="w-1/2">
@@ -66,7 +65,7 @@ export default function NewProgressLog() {
           </div>
         </div>
         <div>
-          <label className="block mb-1">進捗ステータス</label>
+          <label className="block mb-1">状況</label>
           <select name="progressStatus" value={formData.progressStatus} onChange={handleChange} className="border w-full p-2" required>
             <option value="">選択してください</option>
             <option value="順調">順調</option>
@@ -77,7 +76,7 @@ export default function NewProgressLog() {
           {errors.progressStatus && <p className="text-red-500 text-sm mt-1">{errors.progressStatus}</p>}
         </div>
         <div>
-          <label className="block mb-1">進捗評価・詳細</label>
+          <label className="block mb-1">進捗</label>
           <textarea
             name="progressEvaluation"
             value={formData.progressEvaluation}
@@ -90,7 +89,7 @@ export default function NewProgressLog() {
           {errors.progressEvaluation && <p className="text-red-500 text-sm mt-1">{errors.progressEvaluation}</p>}
         </div>
         <div>
-          <label className="block mb-1">次のアクション</label>
+          <label className="block mb-1">今後のアクション</label>
           <textarea
             name="nextAction"
             value={formData.nextAction}
@@ -100,11 +99,6 @@ export default function NewProgressLog() {
             required
           />
           {errors.nextAction && <p className="text-red-500 text-sm mt-1">{errors.nextAction}</p>}
-        </div>
-        <div>
-          <label className="block mb-1">アクション期限</label>
-          <input type="date" name="nextActionDueDate" value={formData.nextActionDueDate} onChange={handleChange} className="border w-full p-2" required />
-          {errors.nextActionDueDate && <p className="text-red-500 text-sm mt-1">{errors.nextActionDueDate}</p>}
         </div>
         <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">保存</button>
       </form>

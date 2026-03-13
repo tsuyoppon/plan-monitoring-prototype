@@ -39,7 +39,6 @@ model ProgressLog {
   progressStatus    String?
   progressEvaluation String?
   nextAction        String?
-  nextActionDueDate DateTime?
   versionNo         Int       @default(1)
   isLatest          Boolean   @default(true)
   createdAt         DateTime  @default(now())

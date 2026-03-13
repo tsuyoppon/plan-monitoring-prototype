@@ -34,7 +34,6 @@ export default function InitiativeDetail() {
   if (!initiative) return <div>Loading...</div>;
 
   const progressLogs = initiative.progressLogs ?? [];
-  const formatDate = (value?: string) => (value ? value.split('T')[0] : '');
 
   const startEdit = (log: ProgressLog) => {
     setEditingLogId(log.id);
@@ -44,7 +43,6 @@ export default function InitiativeDetail() {
       progressStatus: log.progressStatus ?? '',
       progressEvaluation: log.progressEvaluation ?? '',
       nextAction: log.nextAction ?? '',
-      nextActionDueDate: formatDate(log.nextActionDueDate),
     });
     setEditErrors({});
   };
@@ -172,7 +170,7 @@ export default function InitiativeDetail() {
                       </div>
                     </div>
                     <div>
-                      <label className="block mb-1">進捗ステータス</label>
+                      <label className="block mb-1">状況</label>
                       <select
                         name="progressStatus"
                         value={editFormData.progressStatus}
@@ -189,7 +187,7 @@ export default function InitiativeDetail() {
                       {editErrors.progressStatus && <p className="text-red-500 text-sm mt-1">{editErrors.progressStatus}</p>}
                     </div>
                     <div>
-                      <label className="block mb-1">進捗評価・詳細</label>
+                      <label className="block mb-1">進捗</label>
                       <textarea
                         name="progressEvaluation"
                         value={editFormData.progressEvaluation}
@@ -204,7 +202,7 @@ export default function InitiativeDetail() {
                       )}
                     </div>
                     <div>
-                      <label className="block mb-1">次のアクション</label>
+                      <label className="block mb-1">今後のアクション</label>
                       <textarea
                         name="nextAction"
                         value={editFormData.nextAction}
@@ -214,20 +212,6 @@ export default function InitiativeDetail() {
                         required
                       />
                       {editErrors.nextAction && <p className="text-red-500 text-sm mt-1">{editErrors.nextAction}</p>}
-                    </div>
-                    <div>
-                      <label className="block mb-1">アクション期限</label>
-                      <input
-                        type="date"
-                        name="nextActionDueDate"
-                        value={editFormData.nextActionDueDate}
-                        onChange={handleEditChange}
-                        className="border w-full p-2"
-                        required
-                      />
-                      {editErrors.nextActionDueDate && (
-                        <p className="text-red-500 text-sm mt-1">{editErrors.nextActionDueDate}</p>
-                      )}
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -261,10 +245,9 @@ export default function InitiativeDetail() {
                         </button>
                       )}
                     </div>
-                    <div><span className="font-bold">ステータス:</span> {log.progressStatus}</div>
+                    <div><span className="font-bold">状況:</span> {log.progressStatus}</div>
                     <div className="whitespace-pre-wrap"><span className="font-bold">進捗:</span> {log.progressEvaluation}</div>
-                    <div className="whitespace-pre-wrap"><span className="font-bold">次のアクション:</span> {log.nextAction}</div>
-                    <div><span className="font-bold">期限:</span> {formatDate(log.nextActionDueDate)}</div>
+                    <div className="whitespace-pre-wrap"><span className="font-bold">今後のアクション:</span> {log.nextAction}</div>
                   </>
                 )}
               </div>

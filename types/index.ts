@@ -23,7 +23,6 @@ export interface ProgressLog {
   progressStatus?: string;
   progressEvaluation?: string;
   nextAction?: string;
-  nextActionDueDate?: string;
   versionNo: number;
   isLatest: boolean;
   createdAt: string;
