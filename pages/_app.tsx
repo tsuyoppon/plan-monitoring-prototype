@@ -52,7 +52,7 @@ function AppContent({ Component, pageProps }: AppContentProps) {
         <header className="border-b bg-white px-4 py-3">
           <div className="mx-auto flex max-w-7xl items-center justify-between">
             <Link href="/initiatives" className="font-semibold text-gray-800">
-              Plan Monitoring
+              BAJ_中期計画進捗管理システム（β）
             </Link>
             <div className="flex items-center gap-3 text-sm">
               {session.user.role === 'admin' && (
