@@ -8,6 +8,15 @@ export type ProgressLogFormData = {
 
 export type ProgressLogFormErrors = Partial<Record<keyof ProgressLogFormData, string>>;
 
+export const PROGRESS_STATUSES = [
+  '完了',
+  '順調',
+  '一部遅れ',
+  '相応の遅れ',
+  '大幅な遅れ',
+  '未着手',
+] as const;
+
 export const MAX_PROGRESS_STATUS_LENGTH = 50;
 export const MAX_PROGRESS_EVALUATION_LENGTH = 2000;
 export const MAX_NEXT_ACTION_LENGTH = 1000;
@@ -39,6 +48,8 @@ export const validateProgressLog = (data: ProgressLogFormData): ProgressLogFormE
 
   if (!data.progressStatus.trim()) {
     errors.progressStatus = '状況は必須です。';
+  } else if (!PROGRESS_STATUSES.includes(data.progressStatus as (typeof PROGRESS_STATUSES)[number])) {
+    errors.progressStatus = '状況の選択肢が不正です。';
   } else if (data.progressStatus.length > MAX_PROGRESS_STATUS_LENGTH) {
     errors.progressStatus = `状況は${MAX_PROGRESS_STATUS_LENGTH}文字以内で入力してください。`;
   }

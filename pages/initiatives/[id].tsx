@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import {
   MAX_NEXT_ACTION_LENGTH,
   MAX_PROGRESS_EVALUATION_LENGTH,
+  PROGRESS_STATUSES,
   ProgressLogFormData,
   ProgressLogFormErrors,
   validateProgressLog,
@@ -179,10 +180,9 @@ export default function InitiativeDetail() {
                         required
                       >
                         <option value="">選択してください</option>
-                        <option value="順調">順調</option>
-                        <option value="遅れあり">遅れあり</option>
-                        <option value="未着手">未着手</option>
-                        <option value="完了">完了</option>
+                        {PROGRESS_STATUSES.map((status) => (
+                          <option key={status} value={status}>{status}</option>
+                        ))}
                       </select>
                       {editErrors.progressStatus && <p className="text-red-500 text-sm mt-1">{editErrors.progressStatus}</p>}
                     </div>

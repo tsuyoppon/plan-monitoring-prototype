@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import {
   MAX_NEXT_ACTION_LENGTH,
   MAX_PROGRESS_EVALUATION_LENGTH,
+  PROGRESS_STATUSES,
   ProgressLogFormErrors,
   validateProgressLog,
 } from '@/lib/progressValidation';
@@ -68,10 +69,9 @@ export default function NewProgressLog() {
           <label className="block mb-1">状況</label>
           <select name="progressStatus" value={formData.progressStatus} onChange={handleChange} className="border w-full p-2" required>
             <option value="">選択してください</option>
-            <option value="順調">順調</option>
-            <option value="遅れあり">遅れあり</option>
-            <option value="未着手">未着手</option>
-            <option value="完了">完了</option>
+            {PROGRESS_STATUSES.map((status) => (
+              <option key={status} value={status}>{status}</option>
+            ))}
           </select>
           {errors.progressStatus && <p className="text-red-500 text-sm mt-1">{errors.progressStatus}</p>}
         </div>

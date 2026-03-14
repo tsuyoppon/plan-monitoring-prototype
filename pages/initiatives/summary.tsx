@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Initiative } from '@/types';
 
-const STATUS_LABELS = ['完了', '順調', '遅れあり', '未着手', '未設定'] as const;
+const STATUS_LABELS = ['完了', '順調', '一部遅れ', '相応の遅れ', '大幅な遅れ', '未着手', '未設定'] as const;
 
 type StatusLabel = typeof STATUS_LABELS[number];
 

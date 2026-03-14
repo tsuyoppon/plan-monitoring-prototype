@@ -273,10 +273,12 @@ export default function InitiativesList() {
             className="border p-2 rounded"
           >
             <option value="">ステータス（全て）</option>
-            <option value="順調">順調</option>
-            <option value="遅れあり">遅れあり</option>
-            <option value="未着手">未着手</option>
             <option value="完了">完了</option>
+            <option value="順調">順調</option>
+            <option value="一部遅れ">一部遅れ</option>
+            <option value="相応の遅れ">相応の遅れ</option>
+            <option value="大幅な遅れ">大幅な遅れ</option>
+            <option value="未着手">未着手</option>
           </select>
         </div>
         <div className="flex gap-2">
