@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import {
   MAX_INPUT_BY_LENGTH,
@@ -9,6 +9,8 @@ import {
   validateProgressLog,
 } from '@/lib/progressValidation';
 
+const LEAVE_CONFIRM_MESSAGE = '現在の入力内容は保存されません。前の画面に戻りますか？';
+
 const getTodayDateValue = () => {
   const date = new Date();
   const timezoneOffset = date.getTimezoneOffset() * 60000;
@@ -18,6 +20,7 @@ const getTodayDateValue = () => {
 export default function NewProgressLog() {
   const router = useRouter();
   const { id } = router.query;
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
     fiscalYear: new Date().getFullYear(),
@@ -29,6 +32,33 @@ export default function NewProgressLog() {
     inputAt: getTodayDateValue(),
   });
   const [errors, setErrors] = useState<ProgressLogFormErrors>({});
+
+  useEffect(() => {
+    router.beforePopState(() => {
+      if (isSubmitting) {
+        return true;
+      }
+
+      return window.confirm(LEAVE_CONFIRM_MESSAGE);
+    });
+
+    return () => {
+      router.beforePopState(() => true);
+    };
+  }, [router, isSubmitting]);
+
+  const handleBack = () => {
+    if (!window.confirm(LEAVE_CONFIRM_MESSAGE)) {
+      return;
+    }
+
+    if (id) {
+      router.push(`/initiatives/${id}`);
+      return;
+    }
+
+    router.push('/initiatives');
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const value = e.target.name === 'fiscalYear' || e.target.name === 'fiscalQuarter' 
@@ -44,6 +74,7 @@ export default function NewProgressLog() {
     if (Object.keys(validationErrors).length > 0) {
       return;
     }
+    setIsSubmitting(true);
     const res = await fetch(`/api/initiatives/${id}/progress`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -52,6 +83,7 @@ export default function NewProgressLog() {
     if (res.ok) {
       router.push(`/initiatives/${id}`);
     } else {
+      setIsSubmitting(false);
       alert('作成に失敗しました');
     }
   };
@@ -134,7 +166,16 @@ export default function NewProgressLog() {
           />
           {errors.inputAt && <p className="text-red-500 text-sm mt-1">{errors.inputAt}</p>}
         </div>
-        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">保存</button>
+        <div className="flex items-center gap-2">
+          <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">保存</button>
+          <button
+            type="button"
+            onClick={handleBack}
+            className="border border-gray-300 px-4 py-2 rounded"
+          >
+            戻る
+          </button>
+        </div>
       </form>
     </div>
   );
