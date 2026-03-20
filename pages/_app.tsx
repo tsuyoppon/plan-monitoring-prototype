@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { signOut, useSession, SessionProvider } from 'next-auth/react';
 import { useRouter } from 'next/router';
 
-import { canEditRole } from '@/types/auth';
+import { canEditRole, canManageInitiativesRole } from '@/types/auth';
 
 type AppContentProps = Pick<AppProps, 'Component' | 'pageProps'>;
 
@@ -14,9 +14,11 @@ function AppContent({ Component, pageProps }: AppContentProps) {
   const { data: session, status } = useSession();
 
   const isLoginPage = router.pathname === '/auth/login';
-  const requiresEditorRole = [
+  const requiresInitiativeManagerRole = [
     '/initiatives/new',
     '/initiatives/[id]/edit',
+  ].includes(router.pathname);
+  const requiresProgressEditorRole = [
     '/initiatives/[id]/progress/new',
   ].includes(router.pathname);
   const requiresAdminRole = ['/admin/users'].includes(router.pathname);
@@ -28,7 +30,12 @@ function AppContent({ Component, pageProps }: AppContentProps) {
       return;
     }
 
-    if (status === 'authenticated' && requiresEditorRole && !canEditRole(session?.user.role)) {
+    if (status === 'authenticated' && requiresInitiativeManagerRole && !canManageInitiativesRole(session?.user.role)) {
+      router.replace('/initiatives');
+      return;
+    }
+
+    if (status === 'authenticated' && requiresProgressEditorRole && !canEditRole(session?.user.role)) {
       router.replace('/initiatives');
       return;
     }
@@ -36,7 +43,15 @@ function AppContent({ Component, pageProps }: AppContentProps) {
     if (status === 'authenticated' && requiresAdminRole && session?.user.role !== 'admin') {
       router.replace('/initiatives');
     }
-  }, [status, isLoginPage, requiresEditorRole, requiresAdminRole, session?.user.role, router]);
+  }, [
+    status,
+    isLoginPage,
+    requiresInitiativeManagerRole,
+    requiresProgressEditorRole,
+    requiresAdminRole,
+    session?.user.role,
+    router,
+  ]);
 
   if (!isLoginPage && status === 'loading') {
     return <div className="p-4">Loading...</div>;

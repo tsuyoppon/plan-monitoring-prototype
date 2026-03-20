@@ -12,7 +12,7 @@ export default async function handler(
       return;
     }
   } else if (req.method === 'PUT' || req.method === 'DELETE') {
-    const session = await requireRole(req, res, ['editor', 'admin']);
+    const session = await requireRole(req, res, ['admin']);
     if (!session) {
       return;
     }

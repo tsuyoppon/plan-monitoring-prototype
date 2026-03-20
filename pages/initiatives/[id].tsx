@@ -11,7 +11,7 @@ import {
   ProgressLogFormErrors,
   validateProgressLog,
 } from '@/lib/progressValidation';
-import { canEditRole } from '@/types/auth';
+import { canEditRole, canManageInitiativesRole } from '@/types/auth';
 import { Initiative, ProgressLog } from '@/types';
 
 const toDateInputValue = (iso?: string) => {
@@ -39,7 +39,8 @@ const formatDate = (iso?: string) => {
 
 export default function InitiativeDetail() {
   const { data: session } = useSession();
-  const canEdit = canEditRole(session?.user.role);
+  const canManageInitiatives = canManageInitiativesRole(session?.user.role);
+  const canEditProgress = canEditRole(session?.user.role);
   const router = useRouter();
   const { id } = router.query;
   const [initiative, setInitiative] = useState<Initiative | null>(null);
@@ -133,7 +134,7 @@ export default function InitiativeDetail() {
       <div className="bg-white shadow rounded p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">基本情報</h2>
-          {canEdit && (
+          {canManageInitiatives && (
             <Link
               href={`/initiatives/${initiative.id}/edit`}
               className="bg-blue-500 text-white px-4 py-2 rounded"
@@ -156,7 +157,7 @@ export default function InitiativeDetail() {
       <div className="bg-white shadow rounded p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">進捗（四半期別）</h2>
-          {canEdit && (
+          {canEditProgress && (
             <Link href={`/initiatives/${initiative.id}/progress/new`} className="bg-green-500 text-white px-4 py-2 rounded">
               進捗を追加
             </Link>
@@ -286,7 +287,7 @@ export default function InitiativeDetail() {
                   <>
                     <div className="flex justify-between items-center mb-2">
                       <div><span className="font-bold">年度/四半期:</span> {log.fiscalYear}年度 Q{log.fiscalQuarter}</div>
-                      {canEdit && (
+                      {canEditProgress && (
                         <button
                           type="button"
                           onClick={() => startEdit(log)}
