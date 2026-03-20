@@ -52,7 +52,11 @@ export default async function handler(
         include: {
           progressLogs: {
             where: { isLatest: true },
-            orderBy: { createdAt: 'desc' },
+            orderBy: [
+              { fiscalYear: 'desc' },
+              { fiscalQuarter: 'desc' },
+              { versionNo: 'desc' },
+            ],
             take: 1,
           },
         },

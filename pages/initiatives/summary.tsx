@@ -2,13 +2,16 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Initiative } from '@/types';
 
-const STATUS_LABELS = ['完了', '順調', '一部遅れ', '相応の遅れ', '大幅な遅れ', '未着手', '未設定'] as const;
+const STATUS_LABELS = ['完了', '順調', '一部遅れ', '相応の遅れ', '大幅な遅れ', '未着手'] as const;
 
 type StatusLabel = typeof STATUS_LABELS[number];
 
-const getStatusLabel = (initiative: Initiative): StatusLabel => {
+const getStatusLabel = (initiative: Initiative): StatusLabel | undefined => {
   const status = initiative.progressLogs?.[0]?.progressStatus;
-  return (status as StatusLabel) ?? '未設定';
+  if (!status || !STATUS_LABELS.includes(status as StatusLabel)) {
+    return undefined;
+  }
+  return status as StatusLabel;
 };
 
 export default function InitiativesSummary() {
@@ -64,6 +67,9 @@ export default function InitiativesSummary() {
         return;
       }
       const statusLabel = getStatusLabel(initiative);
+      if (!statusLabel) {
+        return;
+      }
       grouped[domain][statusLabel].push(initiative);
     });
 
