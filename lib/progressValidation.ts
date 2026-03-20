@@ -4,6 +4,8 @@ export type ProgressLogFormData = {
   progressStatus: string;
   progressEvaluation: string;
   nextAction: string;
+  inputBy: string;
+  inputAt: string;
 };
 
 export type ProgressLogFormErrors = Partial<Record<keyof ProgressLogFormData, string>>;
@@ -20,6 +22,8 @@ export const PROGRESS_STATUSES = [
 export const MAX_PROGRESS_STATUS_LENGTH = 50;
 export const MAX_PROGRESS_EVALUATION_LENGTH = 2000;
 export const MAX_NEXT_ACTION_LENGTH = 1000;
+export const MAX_INPUT_BY_LENGTH = 100;
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export const normalizeProgressLogInput = (input: {
   fiscalYear: number | string;
@@ -27,12 +31,16 @@ export const normalizeProgressLogInput = (input: {
   progressStatus?: string;
   progressEvaluation?: string;
   nextAction?: string;
+  inputBy?: string;
+  inputAt?: string;
 }): ProgressLogFormData => ({
   fiscalYear: typeof input.fiscalYear === 'string' ? Number(input.fiscalYear) : input.fiscalYear,
   fiscalQuarter: typeof input.fiscalQuarter === 'string' ? Number(input.fiscalQuarter) : input.fiscalQuarter,
   progressStatus: input.progressStatus ?? '',
   progressEvaluation: input.progressEvaluation ?? '',
   nextAction: input.nextAction ?? '',
+  inputBy: input.inputBy ?? '',
+  inputAt: input.inputAt ?? '',
 });
 
 export const validateProgressLog = (data: ProgressLogFormData): ProgressLogFormErrors => {
@@ -64,6 +72,20 @@ export const validateProgressLog = (data: ProgressLogFormData): ProgressLogFormE
     errors.nextAction = '今後のアクションは必須です。';
   } else if (data.nextAction.length > MAX_NEXT_ACTION_LENGTH) {
     errors.nextAction = `今後のアクションは${MAX_NEXT_ACTION_LENGTH}文字以内で入力してください。`;
+  }
+
+  if (!data.inputBy.trim()) {
+    errors.inputBy = '入力者は必須です。';
+  } else if (data.inputBy.length > MAX_INPUT_BY_LENGTH) {
+    errors.inputBy = `入力者は${MAX_INPUT_BY_LENGTH}文字以内で入力してください。`;
+  }
+
+  if (!data.inputAt.trim()) {
+    errors.inputAt = '入力日時は必須です。';
+  } else if (!DATE_ONLY_PATTERN.test(data.inputAt)) {
+    errors.inputAt = '入力日時は日付で入力してください。';
+  } else if (Number.isNaN(new Date(data.inputAt).getTime())) {
+    errors.inputAt = '入力日時を正しく入力してください。';
   }
 
   return errors;

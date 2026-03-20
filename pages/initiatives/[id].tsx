@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import {
+  MAX_INPUT_BY_LENGTH,
   MAX_NEXT_ACTION_LENGTH,
   MAX_PROGRESS_EVALUATION_LENGTH,
   PROGRESS_STATUSES,
@@ -12,6 +13,29 @@ import {
 } from '@/lib/progressValidation';
 import { canEditRole } from '@/types/auth';
 import { Initiative, ProgressLog } from '@/types';
+
+const toDateInputValue = (iso?: string) => {
+  if (!iso) {
+    return '';
+  }
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  const timezoneOffset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - timezoneOffset).toISOString().slice(0, 10);
+};
+
+const formatDate = (iso?: string) => {
+  if (!iso) {
+    return '未入力';
+  }
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return '未入力';
+  }
+  return date.toLocaleDateString('ja-JP');
+};
 
 export default function InitiativeDetail() {
   const { data: session } = useSession();
@@ -44,6 +68,8 @@ export default function InitiativeDetail() {
       progressStatus: log.progressStatus ?? '',
       progressEvaluation: log.progressEvaluation ?? '',
       nextAction: log.nextAction ?? '',
+      inputBy: log.inputBy ?? '',
+      inputAt: toDateInputValue(log.inputAt),
     });
     setEditErrors({});
   };
@@ -213,6 +239,31 @@ export default function InitiativeDetail() {
                       />
                       {editErrors.nextAction && <p className="text-red-500 text-sm mt-1">{editErrors.nextAction}</p>}
                     </div>
+                    <div>
+                      <label className="block mb-1">入力者</label>
+                      <input
+                        type="text"
+                        name="inputBy"
+                        value={editFormData.inputBy}
+                        onChange={handleEditChange}
+                        className="border w-full p-2"
+                        maxLength={MAX_INPUT_BY_LENGTH}
+                        required
+                      />
+                      {editErrors.inputBy && <p className="text-red-500 text-sm mt-1">{editErrors.inputBy}</p>}
+                    </div>
+                    <div>
+                      <label className="block mb-1">入力日時</label>
+                      <input
+                        type="date"
+                        name="inputAt"
+                        value={editFormData.inputAt}
+                        onChange={handleEditChange}
+                        className="border w-full p-2"
+                        required
+                      />
+                      {editErrors.inputAt && <p className="text-red-500 text-sm mt-1">{editErrors.inputAt}</p>}
+                    </div>
                     <div className="flex gap-2">
                       <button
                         type="button"
@@ -248,6 +299,8 @@ export default function InitiativeDetail() {
                     <div><span className="font-bold">状況:</span> {log.progressStatus}</div>
                     <div className="whitespace-pre-wrap"><span className="font-bold">進捗:</span> {log.progressEvaluation}</div>
                     <div className="whitespace-pre-wrap"><span className="font-bold">今後のアクション:</span> {log.nextAction}</div>
+                    <div><span className="font-bold">入力者:</span> {log.inputBy || '未入力'}</div>
+                    <div><span className="font-bold">入力日時:</span> {formatDate(log.inputAt)}</div>
                   </>
                 )}
               </div>

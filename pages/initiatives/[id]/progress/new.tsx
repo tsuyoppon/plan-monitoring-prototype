@@ -1,12 +1,19 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import {
+  MAX_INPUT_BY_LENGTH,
   MAX_NEXT_ACTION_LENGTH,
   MAX_PROGRESS_EVALUATION_LENGTH,
   PROGRESS_STATUSES,
   ProgressLogFormErrors,
   validateProgressLog,
 } from '@/lib/progressValidation';
+
+const getTodayDateValue = () => {
+  const date = new Date();
+  const timezoneOffset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - timezoneOffset).toISOString().slice(0, 10);
+};
 
 export default function NewProgressLog() {
   const router = useRouter();
@@ -18,6 +25,8 @@ export default function NewProgressLog() {
     progressStatus: '',
     progressEvaluation: '',
     nextAction: '',
+    inputBy: '',
+    inputAt: getTodayDateValue(),
   });
   const [errors, setErrors] = useState<ProgressLogFormErrors>({});
 
@@ -99,6 +108,31 @@ export default function NewProgressLog() {
             required
           />
           {errors.nextAction && <p className="text-red-500 text-sm mt-1">{errors.nextAction}</p>}
+        </div>
+        <div>
+          <label className="block mb-1">入力者</label>
+          <input
+            type="text"
+            name="inputBy"
+            value={formData.inputBy}
+            onChange={handleChange}
+            className="border w-full p-2"
+            maxLength={MAX_INPUT_BY_LENGTH}
+            required
+          />
+          {errors.inputBy && <p className="text-red-500 text-sm mt-1">{errors.inputBy}</p>}
+        </div>
+        <div>
+          <label className="block mb-1">入力日時</label>
+          <input
+            type="date"
+            name="inputAt"
+            value={formData.inputAt}
+            onChange={handleChange}
+            className="border w-full p-2"
+            required
+          />
+          {errors.inputAt && <p className="text-red-500 text-sm mt-1">{errors.inputAt}</p>}
         </div>
         <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">保存</button>
       </form>

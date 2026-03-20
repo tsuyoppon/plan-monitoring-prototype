@@ -4,6 +4,8 @@ import { requireRole } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { normalizeProgressLogInput, validateProgressLog } from '@/lib/progressValidation';
 
+const parseDateOnlyToLocalMidnight = (value: string) => new Date(`${value}T00:00:00`);
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -50,6 +52,8 @@ export default async function handler(
         progressStatus,
         progressEvaluation,
         nextAction,
+        inputBy,
+        inputAt,
       } = normalizeProgressLogInput(req.body);
       const validationErrors = validateProgressLog({
         fiscalYear,
@@ -57,6 +61,8 @@ export default async function handler(
         progressStatus,
         progressEvaluation,
         nextAction,
+        inputBy,
+        inputAt,
       });
       if (Object.keys(validationErrors).length > 0) {
         return res.status(400).json({ errors: validationErrors });
@@ -100,6 +106,8 @@ export default async function handler(
             progressStatus,
             progressEvaluation,
             nextAction,
+            inputBy,
+            inputAt: parseDateOnlyToLocalMidnight(inputAt),
             versionNo: nextVersionNo,
             isLatest: true,
           },
@@ -126,6 +134,8 @@ export default async function handler(
         progressStatus,
         progressEvaluation,
         nextAction,
+        inputBy,
+        inputAt,
       } = normalizeProgressLogInput(rawBody);
       const validationErrors = validateProgressLog({
         fiscalYear,
@@ -133,6 +143,8 @@ export default async function handler(
         progressStatus,
         progressEvaluation,
         nextAction,
+        inputBy,
+        inputAt,
       });
       if (Object.keys(validationErrors).length > 0) {
         return res.status(400).json({ errors: validationErrors });
@@ -153,6 +165,8 @@ export default async function handler(
           progressStatus,
           progressEvaluation,
           nextAction,
+          inputBy,
+          inputAt: parseDateOnlyToLocalMidnight(inputAt),
         },
       });
 
