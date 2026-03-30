@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "node .next/standalone/server.js",
+    "start": "HOSTNAME=0.0.0.0 node .next/standalone/server.js",
     "lint": "eslint",
     "db:seed": "tsx prisma/seed.ts",
     "db:migrate:supabase-to-railway": "bash scripts/migrate_supabase_to_railway.sh",
