@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "HOSTNAME=0.0.0.0 node .next/standalone/server.js",
+    "start": "rm -rf .next/standalone/.next/static .next/standalone/public && mkdir -p .next/standalone/.next && cp -R .next/static .next/standalone/.next/static && cp -R public .next/standalone/public && HOSTNAME=0.0.0.0 node .next/standalone/server.js",
     "lint": "eslint",
     "db:seed": "tsx prisma/seed.ts",
     "db:migrate:supabase-to-railway": "bash scripts/migrate_supabase_to_railway.sh",
