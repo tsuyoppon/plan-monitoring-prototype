@@ -39,4 +39,5 @@ export interface AppUser {
   department?: string | null;
   role: UserRole;
   isActive: boolean;
+  hasPassword: boolean;
 }

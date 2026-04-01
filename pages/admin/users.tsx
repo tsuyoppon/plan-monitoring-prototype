@@ -17,6 +17,15 @@ type CreateUserForm = {
   role: AppRole;
 };
 
+type EditUserForm = {
+  email: string;
+  password: string;
+  displayName: string;
+  department: string;
+  role: AppRole;
+  isActive: boolean;
+};
+
 const initialCreateUserForm: CreateUserForm = {
   email: '',
   password: '',
@@ -34,6 +43,10 @@ export default function AdminUsersPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [createForm, setCreateForm] = useState<CreateUserForm>(initialCreateUserForm);
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<EditUserForm | null>(null);
+  const [showEditPassword, setShowEditPassword] = useState(false);
 
   const myUserId = session?.user.id;
 
@@ -66,7 +79,45 @@ export default function AdminUsersPage() {
     return [...users].sort((a, b) => a.id - b.id);
   }, [users]);
 
-  const updateUser = async (id: number, payload: Partial<Pick<AppUser, 'role' | 'isActive'>>) => {
+  const startEdit = (user: AppUser) => {
+    setErrorMessage('');
+    setSuccessMessage('');
+    setEditingUserId(user.id);
+    setShowEditPassword(false);
+    setEditForm({
+      email: user.email,
+      password: '',
+      displayName: user.displayName ?? '',
+      department: user.department ?? '',
+      role: user.role,
+      isActive: user.isActive,
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingUserId(null);
+    setEditForm(null);
+    setShowEditPassword(false);
+  };
+
+  const handleEditChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    if (!editForm) {
+      return;
+    }
+
+    const { name, value, type } = event.target;
+    const nextValue = type === 'checkbox' ? (event.target as HTMLInputElement).checked : value;
+    setEditForm((prev) => (prev ? { ...prev, [name]: nextValue } : prev));
+  };
+
+  const updateUser = async (id: number, payload: {
+    email?: string;
+    displayName?: string | null;
+    department?: string | null;
+    role?: AppRole;
+    isActive?: boolean;
+    password?: string;
+  }) => {
     setErrorMessage('');
     setSuccessMessage('');
     setIsSavingById((prev) => ({ ...prev, [id]: true }));
@@ -85,8 +136,75 @@ export default function AdminUsersPage() {
 
       const updated = (await res.json()) as AppUser;
       setUsers((prev) => prev.map((user) => (user.id === id ? updated : user)));
+      setSuccessMessage('ユーザー情報を更新しました。');
+      return true;
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'ユーザー更新に失敗しました。');
+      return false;
+    } finally {
+      setIsSavingById((prev) => ({ ...prev, [id]: false }));
+    }
+  };
+
+  const saveEditUser = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!editForm || editingUserId === null) {
+      return;
+    }
+
+    const email = editForm.email.trim();
+    if (!email) {
+      setErrorMessage('メールアドレスは必須です。');
+      return;
+    }
+
+    if (editForm.password && editForm.password.length < 8) {
+      setErrorMessage('パスワードは8文字以上で入力してください。');
+      return;
+    }
+
+    const isUpdated = await updateUser(editingUserId, {
+      email,
+      displayName: editForm.displayName.trim() || null,
+      department: editForm.department.trim() || null,
+      role: editForm.role,
+      isActive: editForm.isActive,
+      password: editForm.password || undefined,
+    });
+
+    if (isUpdated) {
+      cancelEdit();
+    }
+  };
+
+  const deleteUser = async (id: number) => {
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    if (!confirm('このユーザーを削除しますか？この操作は元に戻せません。')) {
+      return;
+    }
+
+    setIsSavingById((prev) => ({ ...prev, [id]: true }));
+
+    try {
+      const res = await fetch(`/api/users/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as ApiError;
+        throw new Error(data.error ?? 'ユーザー削除に失敗しました。');
+      }
+
+      setUsers((prev) => prev.filter((user) => user.id !== id));
+      if (editingUserId === id) {
+        cancelEdit();
+      }
+      setSuccessMessage('ユーザーを削除しました。');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'ユーザー削除に失敗しました。');
     } finally {
       setIsSavingById((prev) => ({ ...prev, [id]: false }));
     }
@@ -179,15 +297,24 @@ export default function AdminUsersPage() {
 
           <label className="text-sm">
             <span className="mb-1 block text-gray-700">パスワード *</span>
-            <input
-              type="password"
-              name="password"
-              value={createForm.password}
-              onChange={handleCreateChange}
-              className="w-full rounded border px-3 py-2"
-              minLength={8}
-              required
-            />
+            <div className="flex gap-2">
+              <input
+                type={showCreatePassword ? 'text' : 'password'}
+                name="password"
+                value={createForm.password}
+                onChange={handleCreateChange}
+                className="w-full rounded border px-3 py-2"
+                minLength={8}
+                required
+              />
+              <button
+                type="button"
+                className="rounded border px-3 py-2 text-xs"
+                onClick={() => setShowCreatePassword((prev) => !prev)}
+              >
+                {showCreatePassword ? '非表示' : '表示'}
+              </button>
+            </div>
           </label>
 
           <label className="text-sm">
@@ -250,6 +377,8 @@ export default function AdminUsersPage() {
               <th className="px-3 py-2">部署</th>
               <th className="px-3 py-2">ロール</th>
               <th className="px-3 py-2">有効</th>
+              <th className="px-3 py-2">パスワード</th>
+              <th className="px-3 py-2">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -263,30 +392,28 @@ export default function AdminUsersPage() {
                   <td className="px-3 py-2">{user.email}</td>
                   <td className="px-3 py-2">{user.displayName || '-'}</td>
                   <td className="px-3 py-2">{user.department || '-'}</td>
+                  <td className="px-3 py-2">{user.role}</td>
+                  <td className="px-3 py-2">{user.isActive ? '有効' : '無効'}</td>
+                  <td className="px-3 py-2">{user.hasPassword ? '設定済み' : '未設定'}</td>
                   <td className="px-3 py-2">
-                    <select
-                      value={user.role}
-                      disabled={isSaving || isSelf}
-                      className="rounded border px-2 py-1 disabled:bg-gray-100"
-                      onChange={(event) => updateUser(user.id, { role: event.target.value as AppRole })}
-                    >
-                      {APP_ROLES.map((role) => (
-                        <option key={role} value={role}>
-                          {role}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="px-3 py-2">
-                    <label className="inline-flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={user.isActive}
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        className="rounded border px-2 py-1 hover:bg-gray-100"
+                        onClick={() => startEdit(user)}
+                        disabled={isSaving}
+                      >
+                        編集
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded border border-red-300 px-2 py-1 text-red-700 hover:bg-red-50 disabled:opacity-60"
+                        onClick={() => deleteUser(user.id)}
                         disabled={isSaving || isSelf}
-                        onChange={(event) => updateUser(user.id, { isActive: event.target.checked })}
-                      />
-                      <span>{user.isActive ? '有効' : '無効'}</span>
-                    </label>
+                      >
+                        削除
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -295,7 +422,120 @@ export default function AdminUsersPage() {
         </table>
       </div>
 
-      <p className="mt-3 text-xs text-gray-500">※ 自分自身のロール変更・無効化はできません。</p>
+      {editingUserId !== null && editForm && (
+        <div className="mt-6 rounded border bg-white p-4">
+          <h2 className="mb-3 text-lg font-semibold">ユーザー編集 (ID: {editingUserId})</h2>
+          <form onSubmit={saveEditUser} className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <label className="text-sm">
+              <span className="mb-1 block text-gray-700">メールアドレス *</span>
+              <input
+                type="email"
+                name="email"
+                value={editForm.email}
+                onChange={handleEditChange}
+                className="w-full rounded border px-3 py-2"
+                required
+              />
+            </label>
+
+            <label className="text-sm">
+              <span className="mb-1 block text-gray-700">パスワード (変更時のみ入力)</span>
+              <div className="flex gap-2">
+                <input
+                  type={showEditPassword ? 'text' : 'password'}
+                  name="password"
+                  value={editForm.password}
+                  onChange={handleEditChange}
+                  className="w-full rounded border px-3 py-2"
+                  minLength={8}
+                  placeholder="8文字以上"
+                />
+                <button
+                  type="button"
+                  className="rounded border px-3 py-2 text-xs"
+                  onClick={() => setShowEditPassword((prev) => !prev)}
+                >
+                  {showEditPassword ? '非表示' : '表示'}
+                </button>
+              </div>
+            </label>
+
+            <label className="text-sm">
+              <span className="mb-1 block text-gray-700">表示名</span>
+              <input
+                type="text"
+                name="displayName"
+                value={editForm.displayName}
+                onChange={handleEditChange}
+                className="w-full rounded border px-3 py-2"
+              />
+            </label>
+
+            <label className="text-sm">
+              <span className="mb-1 block text-gray-700">部署</span>
+              <input
+                type="text"
+                name="department"
+                value={editForm.department}
+                onChange={handleEditChange}
+                className="w-full rounded border px-3 py-2"
+              />
+            </label>
+
+            <label className="text-sm">
+              <span className="mb-1 block text-gray-700">ロール</span>
+              <select
+                name="role"
+                value={editForm.role}
+                onChange={handleEditChange}
+                className="w-full rounded border px-3 py-2 md:w-48"
+                disabled={editingUserId === myUserId}
+              >
+                {APP_ROLES.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="text-sm">
+              <span className="mb-1 block text-gray-700">有効/無効</span>
+              <div className="pt-2">
+                <label className="inline-flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    name="isActive"
+                    checked={editForm.isActive}
+                    onChange={handleEditChange}
+                    disabled={editingUserId === myUserId}
+                  />
+                  <span>{editForm.isActive ? '有効' : '無効'}</span>
+                </label>
+              </div>
+            </label>
+
+            <div className="md:col-span-2 flex gap-2">
+              <button
+                type="submit"
+                disabled={Boolean(isSavingById[editingUserId])}
+                className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                保存
+              </button>
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className="rounded border px-4 py-2 hover:bg-gray-100"
+              >
+                キャンセル
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <p className="mt-3 text-xs text-gray-500">※ 自分自身のロール変更・無効化・削除はできません。</p>
     </div>
   );
 }

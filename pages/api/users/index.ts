@@ -12,6 +12,7 @@ const sanitizeUser = (user: {
   department: string | null;
   role: string;
   isActive: boolean;
+  passwordHash: string | null;
 }) => ({
   id: user.id,
   email: user.email,
@@ -19,6 +20,7 @@ const sanitizeUser = (user: {
   department: user.department,
   role: user.role,
   isActive: user.isActive,
+  hasPassword: Boolean(user.passwordHash),
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
