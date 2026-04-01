@@ -9,10 +9,6 @@ export default function Home() {
           <span className="block">中期計画進捗管理システム（β版）</span>
         </h1>
 
-        <p className="mt-3 text-2xl">
-          進捗確認ポータル(β版）
-        </p>
-
         <div className="mt-6 flex flex-col gap-2">
           <Link href="/initiatives" className="text-blue-600 hover:underline text-xl">
             施策一覧へ &rarr;
