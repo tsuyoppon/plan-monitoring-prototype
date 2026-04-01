@@ -4,8 +4,9 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-2">
       <main className="flex flex-col items-center justify-center w-full flex-1 px-20 text-center">
-        <h1 className="text-6xl font-bold">
-          日本バドミントン協会中期計画
+        <h1 className="text-6xl font-bold leading-tight">
+          <span className="block">日本バドミントン協会</span>
+          <span className="block">中期計画進捗管理システム（β版）</span>
         </h1>
 
         <p className="mt-3 text-2xl">
