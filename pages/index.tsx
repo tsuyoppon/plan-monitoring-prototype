@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+const referenceMaterialUrl = '/reference-materials/20260512Chukikeikaku_test.pdf';
+
 export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-2">
@@ -16,6 +18,14 @@ export default function Home() {
           <Link href="/initiatives/summary" className="text-blue-600 hover:underline text-xl">
             進捗状況まとめへ &rarr;
           </Link>
+          <a
+            href={referenceMaterialUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline text-xl"
+          >
+            参考資料へ &rarr;
+          </a>
         </div>
       </main>
     </div>
