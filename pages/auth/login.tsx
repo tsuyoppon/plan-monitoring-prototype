@@ -14,7 +14,7 @@ export default function LoginPage() {
     if (status === 'authenticated') {
       const callbackUrl = typeof router.query.callbackUrl === 'string'
         ? router.query.callbackUrl
-        : '/initiatives';
+        : '/';
       router.replace(callbackUrl);
     }
   }, [status, router]);
@@ -39,7 +39,7 @@ export default function LoginPage() {
 
     const callbackUrl = typeof router.query.callbackUrl === 'string'
       ? router.query.callbackUrl
-      : '/initiatives';
+      : '/';
     await router.push(callbackUrl);
   };
 
