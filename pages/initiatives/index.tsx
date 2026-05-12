@@ -7,6 +7,9 @@ import { Initiative } from '@/types';
 
 type FetchParams = Record<string, string>;
 
+const referenceMaterialUrl =
+  process.env.NEXT_PUBLIC_REFERENCE_MATERIAL_URL || '/reference-materials/20260512Chukikeikaku_test.pdf';
+
 export default function InitiativesList() {
   const { data: session } = useSession();
   const canManageInitiatives = canManageInitiativesRole(session?.user.role);
@@ -181,6 +184,16 @@ export default function InitiativesList() {
             >
               進捗状況まとめ
             </Link>
+          )}
+          {!showDeleted && (
+            <a
+              href={referenceMaterialUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 rounded text-white bg-slate-600 hover:bg-slate-700"
+            >
+              参考資料（中期計画）
+            </a>
           )}
           {!showDeleted && canManageInitiatives && (
             <button
