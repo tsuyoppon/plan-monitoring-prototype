@@ -120,9 +120,9 @@ export default function InitiativesSummary() {
                       {matrix[domain][status].length === 0 ? (
                         <span className="text-gray-400">該当なし</span>
                       ) : (
-                        <ul className="space-y-1">
+                        <ul className="list-disc space-y-1 pl-5">
                           {matrix[domain][status].map((initiative) => (
-                            <li key={initiative.id}>
+                            <li key={initiative.id} className="pl-1">
                               <Link
                                 href={`/initiatives/${initiative.id}`}
                                 className="text-blue-600 hover:underline"
