@@ -27,6 +27,7 @@ model Initiative {
   updatedAt    DateTime  @updatedAt
 
   progressLogs ProgressLog[]
+  reminderEmailLogs ReminderEmailLog[]
 
   @@map("initiatives")
 }
@@ -59,5 +60,36 @@ model AppUser {
   role        String  @default("editor")
   isActive    Boolean @default(true)
 
+  receivedReminderEmailLogs ReminderEmailLog[] @relation("ReminderRecipient")
+  sentReminderEmailLogs     ReminderEmailLog[] @relation("ReminderSender")
+
   @@map("app_users")
+}
+
+model ReminderEmailSetting {
+  id          Int      @id @default(autoincrement())
+  introText   String   @db.Text
+  closingText String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("reminder_email_settings")
+}
+
+model ReminderEmailLog {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  initiativeId   Int
+  recipientEmail String
+  recipientName  String
+  subject        String
+  body           String   @db.Text
+  sentByUserId   Int?
+  sentAt         DateTime @default(now())
+
+  user       AppUser    @relation("ReminderRecipient", fields: [userId], references: [id])
+  initiative Initiative @relation(fields: [initiativeId], references: [id])
+  sentBy     AppUser?   @relation("ReminderSender", fields: [sentByUserId], references: [id])
+
+  @@map("reminder_email_logs")
 }
