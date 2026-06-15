@@ -32,6 +32,11 @@ export interface ProgressLog {
 
 export type UserRole = 'viewer' | 'editor' | 'admin';
 
+export interface ProgressInputUserOption {
+  id: number;
+  displayName: string;
+}
+
 export interface AppUser {
   id: number;
   email: string;

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { ProgressInputUserOption } from '@/types';
 import {
-  MAX_INPUT_BY_LENGTH,
   MAX_NEXT_ACTION_LENGTH,
   MAX_PROGRESS_EVALUATION_LENGTH,
   PROGRESS_STATUSES,
@@ -21,6 +21,8 @@ export default function NewProgressLog() {
   const router = useRouter();
   const { id } = router.query;
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [inputUserOptions, setInputUserOptions] = useState<ProgressInputUserOption[]>([]);
+  const [isLoadingInputUsers, setIsLoadingInputUsers] = useState(true);
   
   const [formData, setFormData] = useState({
     fiscalYear: new Date().getFullYear(),
@@ -32,6 +34,35 @@ export default function NewProgressLog() {
     inputAt: getTodayDateValue(),
   });
   const [errors, setErrors] = useState<ProgressLogFormErrors>({});
+
+
+  useEffect(() => {
+    const fetchInputUserOptions = async () => {
+      try {
+        const res = await fetch('/api/users/progress-input-options');
+        if (!res.ok) {
+          throw new Error('Failed to fetch progress input users');
+        }
+
+        const users = (await res.json()) as ProgressInputUserOption[];
+        setInputUserOptions(users);
+        setFormData((prev) => {
+          if (prev.inputBy || users.length === 0) {
+            return prev;
+          }
+
+          return { ...prev, inputBy: users[0].displayName };
+        });
+      } catch (error) {
+        console.error(error);
+        alert('入力者の取得に失敗しました');
+      } finally {
+        setIsLoadingInputUsers(false);
+      }
+    };
+
+    fetchInputUserOptions();
+  }, []);
 
   useEffect(() => {
     router.beforePopState(() => {
@@ -143,15 +174,22 @@ export default function NewProgressLog() {
         </div>
         <div>
           <label className="block mb-1">入力者</label>
-          <input
-            type="text"
+          <select
             name="inputBy"
             value={formData.inputBy}
             onChange={handleChange}
             className="border w-full p-2"
-            maxLength={MAX_INPUT_BY_LENGTH}
             required
-          />
+            disabled={isLoadingInputUsers || inputUserOptions.length === 0}
+          >
+            <option value="">選択してください</option>
+            {inputUserOptions.map((user) => (
+              <option key={user.id} value={user.displayName}>{user.displayName}</option>
+            ))}
+          </select>
+          {inputUserOptions.length === 0 && !isLoadingInputUsers && (
+            <p className="text-red-500 text-sm mt-1">入力者として選択できる登録名がありません。</p>
+          )}
           {errors.inputBy && <p className="text-red-500 text-sm mt-1">{errors.inputBy}</p>}
         </div>
         <div>
