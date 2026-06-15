@@ -6,17 +6,44 @@ import { normalizeProgressLogInput, validateProgressLog } from '@/lib/progressVa
 
 const parseDateOnlyToLocalMidnight = (value: string) => new Date(`${value}T00:00:00`);
 
+const getAllowedInputNames = async (session: Awaited<ReturnType<typeof requireRole>>) => {
+  if (!session) {
+    return [];
+  }
+
+  if (session.user.role !== 'admin') {
+    const displayName = session.user.displayName?.trim();
+    return displayName ? [displayName] : [];
+  }
+
+  const users = await prisma.appUser.findMany({
+    where: {
+      isActive: true,
+      displayName: {
+        not: null,
+      },
+    },
+    select: { displayName: true },
+  });
+
+  return users
+    .map((user) => user.displayName?.trim())
+    .filter((displayName): displayName is string => Boolean(displayName));
+};
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  let session: Awaited<ReturnType<typeof requireRole>> = null;
+
   if (req.method === 'GET') {
-    const session = await requireRole(req, res, ['viewer', 'editor', 'admin']);
+    session = await requireRole(req, res, ['viewer', 'editor', 'admin']);
     if (!session) {
       return;
     }
   } else if (req.method === 'POST' || req.method === 'PUT') {
-    const session = await requireRole(req, res, ['editor', 'admin']);
+    session = await requireRole(req, res, ['editor', 'admin']);
     if (!session) {
       return;
     }
@@ -66,6 +93,11 @@ export default async function handler(
       });
       if (Object.keys(validationErrors).length > 0) {
         return res.status(400).json({ errors: validationErrors });
+      }
+
+      const allowedInputNames = await getAllowedInputNames(session);
+      if (!allowedInputNames.includes(inputBy)) {
+        return res.status(400).json({ errors: { inputBy: '選択可能な入力者を指定してください。' } });
       }
 
       // トランザクションで処理
@@ -148,6 +180,11 @@ export default async function handler(
       });
       if (Object.keys(validationErrors).length > 0) {
         return res.status(400).json({ errors: validationErrors });
+      }
+
+      const allowedInputNames = await getAllowedInputNames(session);
+      if (!allowedInputNames.includes(inputBy)) {
+        return res.status(400).json({ errors: { inputBy: '選択可能な入力者を指定してください。' } });
       }
 
       const existingLog = await prisma.progressLog.findFirst({
