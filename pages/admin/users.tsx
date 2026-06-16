@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 
 import { APP_ROLES, AppRole } from '@/types/auth';
-import { AppUser } from '@/types';
+import { AppUser, Initiative } from '@/types';
 
 type ApiError = {
   error?: string;
@@ -15,6 +15,16 @@ type CreateUserForm = {
   displayName: string;
   department: string;
   role: AppRole;
+};
+
+type ReminderSettings = {
+  introText: string;
+  closingText: string;
+};
+
+type ReminderForm = {
+  userId: string;
+  initiativeId: string;
 };
 
 type EditUserForm = {
@@ -34,12 +44,27 @@ const initialCreateUserForm: CreateUserForm = {
   role: 'viewer',
 };
 
+const initialReminderSettings: ReminderSettings = {
+  introText: '',
+  closingText: '',
+};
+
+const initialReminderForm: ReminderForm = {
+  userId: '',
+  initiativeId: '',
+};
+
 export default function AdminUsersPage() {
   const { data: session } = useSession();
   const [users, setUsers] = useState<AppUser[]>([]);
+  const [initiatives, setInitiatives] = useState<Initiative[]>([]);
+  const [reminderSettings, setReminderSettings] = useState<ReminderSettings>(initialReminderSettings);
+  const [reminderForm, setReminderForm] = useState<ReminderForm>(initialReminderForm);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingById, setIsSavingById] = useState<Record<number, boolean>>({});
   const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [isSavingReminderSettings, setIsSavingReminderSettings] = useState(false);
+  const [isSendingReminder, setIsSendingReminder] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [createForm, setCreateForm] = useState<CreateUserForm>(initialCreateUserForm);
@@ -50,34 +75,126 @@ export default function AdminUsersPage() {
 
   const myUserId = session?.user.id;
 
-  const fetchUsers = useCallback(async () => {
+  const fetchAdminData = useCallback(async () => {
     setErrorMessage('');
     setSuccessMessage('');
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/users');
-      if (!res.ok) {
-        const payload = (await res.json().catch(() => ({}))) as ApiError;
+      const [usersRes, initiativesRes, settingsRes] = await Promise.all([
+        fetch('/api/users'),
+        fetch('/api/initiatives'),
+        fetch('/api/admin/reminder/settings'),
+      ]);
+
+      if (!usersRes.ok) {
+        const payload = (await usersRes.json().catch(() => ({}))) as ApiError;
         throw new Error(payload.error ?? 'ユーザー一覧の取得に失敗しました。');
       }
+      if (!initiativesRes.ok) {
+        const payload = (await initiativesRes.json().catch(() => ({}))) as ApiError;
+        throw new Error(payload.error ?? '施策一覧の取得に失敗しました。');
+      }
+      if (!settingsRes.ok) {
+        const payload = (await settingsRes.json().catch(() => ({}))) as ApiError;
+        throw new Error(payload.error ?? 'リマインドメール設定の取得に失敗しました。');
+      }
 
-      const data = (await res.json()) as AppUser[];
-      setUsers(data);
+      setUsers((await usersRes.json()) as AppUser[]);
+      setInitiatives((await initiativesRes.json()) as Initiative[]);
+      setReminderSettings((await settingsRes.json()) as ReminderSettings);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'ユーザー一覧の取得に失敗しました。');
+      setErrorMessage(error instanceof Error ? error.message : '管理者データの取得に失敗しました。');
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    fetchAdminData();
+  }, [fetchAdminData]);
 
   const sortedUsers = useMemo(() => {
     return [...users].sort((a, b) => a.id - b.id);
   }, [users]);
+
+
+
+  const activeReminderUsers = useMemo(() => sortedUsers.filter((user) => user.isActive), [sortedUsers]);
+
+  const sortedInitiatives = useMemo(() => {
+    return [...initiatives].sort((a, b) => a.id - b.id);
+  }, [initiatives]);
+
+  const handleReminderSettingsChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    const { name, value } = event.target;
+    setReminderSettings((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleReminderFormChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = event.target;
+    setReminderForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const saveReminderSettings = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    if (!reminderSettings.introText.trim() || !reminderSettings.closingText.trim()) {
+      setErrorMessage('案内文と末尾文・問い合わせ先は必須です。');
+      return;
+    }
+
+    setIsSavingReminderSettings(true);
+    try {
+      const res = await fetch('/api/admin/reminder/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reminderSettings),
+      });
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => ({}))) as ApiError;
+        throw new Error(payload.error ?? 'リマインドメール設定の保存に失敗しました。');
+      }
+      setReminderSettings((await res.json()) as ReminderSettings);
+      setSuccessMessage('リマインドメール設定を保存しました。');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'リマインドメール設定の保存に失敗しました。');
+    } finally {
+      setIsSavingReminderSettings(false);
+    }
+  };
+
+  const sendReminder = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    if (!reminderForm.userId || !reminderForm.initiativeId) {
+      setErrorMessage('送付先ユーザーと対象施策を選択してください。');
+      return;
+    }
+
+    setIsSendingReminder(true);
+    try {
+      const res = await fetch('/api/admin/reminder/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: Number(reminderForm.userId), initiativeId: Number(reminderForm.initiativeId) }),
+      });
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => ({}))) as ApiError;
+        throw new Error(payload.error ?? 'リマインドメール送信に失敗しました。');
+      }
+      setReminderForm(initialReminderForm);
+      setSuccessMessage('リマインドメールを送信しました。');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'リマインドメール送信に失敗しました。');
+    } finally {
+      setIsSendingReminder(false);
+    }
+  };
 
   const startEdit = (user: AppUser) => {
     setErrorMessage('');
@@ -279,6 +396,78 @@ export default function AdminUsersPage() {
 
       {errorMessage && <p className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{errorMessage}</p>}
       {successMessage && <p className="mb-4 rounded border border-green-200 bg-green-50 p-3 text-sm text-green-700">{successMessage}</p>}
+
+
+      <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="rounded border bg-white p-4">
+          <h2 className="mb-3 text-lg font-semibold">リマインドメール定型文</h2>
+          <form onSubmit={saveReminderSettings} className="space-y-3">
+            <label className="block text-sm">
+              <span className="mb-1 block text-gray-700">宛先後の案内文 *</span>
+              <textarea
+                name="introText"
+                value={reminderSettings.introText}
+                onChange={handleReminderSettingsChange}
+                className="min-h-28 w-full rounded border px-3 py-2"
+                required
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block text-gray-700">末尾の挨拶文・問い合わせ先 *</span>
+              <textarea
+                name="closingText"
+                value={reminderSettings.closingText}
+                onChange={handleReminderSettingsChange}
+                className="min-h-28 w-full rounded border px-3 py-2"
+                required
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={isSavingReminderSettings}
+              className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSavingReminderSettings ? '保存中...' : '定型文を保存'}
+            </button>
+          </form>
+        </div>
+
+        <div className="rounded border bg-white p-4">
+          <h2 className="mb-3 text-lg font-semibold">リマインドメール送信</h2>
+          <p className="mb-3 text-sm text-gray-600">選択したユーザー宛に、選択した施策の最新進捗状況を含むメールを送信します。</p>
+          <form onSubmit={sendReminder} className="space-y-3">
+            <label className="block text-sm">
+              <span className="mb-1 block text-gray-700">送付先ユーザー *</span>
+              <select name="userId" value={reminderForm.userId} onChange={handleReminderFormChange} className="w-full rounded border px-3 py-2" required>
+                <option value="">選択してください</option>
+                {activeReminderUsers.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.displayName || user.email} ({user.email})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block text-gray-700">対象施策 *</span>
+              <select name="initiativeId" value={reminderForm.initiativeId} onChange={handleReminderFormChange} className="w-full rounded border px-3 py-2" required>
+                <option value="">選択してください</option>
+                {sortedInitiatives.map((initiative) => (
+                  <option key={initiative.id} value={initiative.id}>
+                    {initiative.measureName}（{initiative.domain}）
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="submit"
+              disabled={isSendingReminder}
+              className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSendingReminder ? '送信中...' : 'リマインドメールを送信'}
+            </button>
+          </form>
+        </div>
+      </div>
 
       <div className="mb-6 rounded border bg-white p-4">
         <h2 className="mb-3 text-lg font-semibold">ユーザー新規作成</h2>
