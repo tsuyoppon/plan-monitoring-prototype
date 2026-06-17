@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
+import { withAccessLogging } from '@/lib/accessLogging';
 import { requireRole } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { ProgressInputUserOption } from '@/types';
@@ -17,7 +18,7 @@ const toDisplayNameOption = (user: { id: number; displayName: string | null }): 
   };
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await requireRole(req, res, ['editor', 'admin']);
   if (!session) {
     return;
@@ -60,3 +61,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(500).json({ error: 'Failed to fetch progress input users' });
   }
 }
+
+export default withAccessLogging(handler);

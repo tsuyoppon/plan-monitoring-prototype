@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
+import { withAccessLogging } from '@/lib/accessLogging';
 import { requireRole } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import {
@@ -13,7 +14,7 @@ const getErrorMessage = (error: unknown) => {
   return error instanceof Error ? error.message : 'リマインドメール送信に失敗しました。';
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await requireRole(req, res, ['admin']);
   if (!session) return;
 
@@ -86,3 +87,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(500).json({ error: 'リマインドメール送信に失敗しました。' });
   }
 }
+
+export default withAccessLogging(handler);

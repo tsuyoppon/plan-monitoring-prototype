@@ -1,9 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { Prisma } from '@/generated/client/client';
+import { withAccessLogging } from '@/lib/accessLogging';
 import { requireRole } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
-export default async function handler(
+async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
@@ -92,3 +93,5 @@ export default async function handler(
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
+
+export default withAccessLogging(handler);

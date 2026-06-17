@@ -1,12 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
+import { withAccessLogging } from '@/lib/accessLogging';
 import { requireRole } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
 const DEFAULT_INTRO_TEXT = '以下の施策について、最新の進捗状況をお知らせします。内容をご確認ください。';
 const DEFAULT_CLOSING_TEXT = '以上、よろしくお願いいたします。\nお問い合わせ先: monitoring@example.com';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await requireRole(req, res, ['admin']);
   if (!session) return;
 
@@ -35,3 +36,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   res.setHeader('Allow', ['GET', 'PUT']);
   res.status(405).end(`Method ${req.method} Not Allowed`);
 }
+
+export default withAccessLogging(handler);

@@ -21,7 +21,7 @@ function AppContent({ Component, pageProps }: AppContentProps) {
   const requiresProgressEditorRole = [
     '/initiatives/[id]/progress/new',
   ].includes(router.pathname);
-  const requiresAdminRole = ['/admin/users'].includes(router.pathname);
+  const requiresAdminRole = ['/admin/users', '/admin/access'].includes(router.pathname);
 
   useEffect(() => {
     if (status === 'unauthenticated' && !isLoginPage) {
@@ -53,6 +53,29 @@ function AppContent({ Component, pageProps }: AppContentProps) {
     router,
   ]);
 
+  useEffect(() => {
+    if (status !== 'authenticated' || isLoginPage) {
+      return;
+    }
+
+    const recordPageView = (path: string) => {
+      void fetch('/api/access-log/page-view', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path }),
+      }).catch((error) => {
+        console.warn('Failed to record page view', error);
+      });
+    };
+
+    recordPageView(router.asPath);
+    router.events.on('routeChangeComplete', recordPageView);
+
+    return () => {
+      router.events.off('routeChangeComplete', recordPageView);
+    };
+  }, [status, isLoginPage, router]);
+
   if (!isLoginPage && status === 'loading') {
     return <div className="p-4">Loading...</div>;
   }
@@ -71,9 +94,14 @@ function AppContent({ Component, pageProps }: AppContentProps) {
             </Link>
             <div className="flex items-center gap-3 text-sm">
               {session.user.role === 'admin' && (
-                <Link href="/admin/users" className="rounded border px-3 py-1 hover:bg-gray-100">
-                  ユーザー管理
-                </Link>
+                <>
+                  <Link href="/admin/users" className="rounded border px-3 py-1 hover:bg-gray-100">
+                    ユーザー管理
+                  </Link>
+                  <Link href="/admin/access" className="rounded border px-3 py-1 hover:bg-gray-100">
+                    アクセス管理
+                  </Link>
+                </>
               )}
               <span className="text-gray-700">
                 {session.user.displayName || session.user.email} ({session.user.role})

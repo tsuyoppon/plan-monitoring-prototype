@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { Prisma } from '@/generated/client/client';
+import { withAccessLogging } from '@/lib/accessLogging';
 import { requireRole } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { normalizeProgressLogInput, validateProgressLog } from '@/lib/progressValidation';
@@ -31,7 +32,7 @@ const getAllowedInputNames = async (session: Awaited<ReturnType<typeof requireRo
     .filter((displayName): displayName is string => Boolean(displayName));
 };
 
-export default async function handler(
+async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
@@ -217,3 +218,5 @@ export default async function handler(
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
+
+export default withAccessLogging(handler);

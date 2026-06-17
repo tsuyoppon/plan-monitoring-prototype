@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
+import { withAccessLogging } from '@/lib/accessLogging';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/auth';
 import { AppRole, isAppRole } from '@/types/auth';
@@ -23,7 +24,7 @@ const sanitizeUser = (user: {
   hasPassword: Boolean(user.passwordHash),
 });
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await requireRole(req, res, ['admin']);
   if (!session) {
     return;
@@ -77,3 +78,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   res.setHeader('Allow', ['GET', 'POST']);
   res.status(405).end(`Method ${req.method} Not Allowed`);
 }
+
+export default withAccessLogging(handler);
