@@ -27,6 +27,14 @@ type ReminderForm = {
   initiativeIds: string[];
 };
 
+type ReminderPreview = {
+  subject: string;
+  body: string;
+  recipientName: string;
+  recipientEmail: string;
+  initiativeCount: number;
+};
+
 type EditUserForm = {
   email: string;
   password: string;
@@ -60,10 +68,12 @@ export default function AdminUsersPage() {
   const [initiatives, setInitiatives] = useState<Initiative[]>([]);
   const [reminderSettings, setReminderSettings] = useState<ReminderSettings>(initialReminderSettings);
   const [reminderForm, setReminderForm] = useState<ReminderForm>(initialReminderForm);
+  const [reminderPreview, setReminderPreview] = useState<ReminderPreview | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingById, setIsSavingById] = useState<Record<number, boolean>>({});
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [isSavingReminderSettings, setIsSavingReminderSettings] = useState(false);
+  const [isPreviewingReminder, setIsPreviewingReminder] = useState(false);
   const [isSendingReminder, setIsSendingReminder] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -132,11 +142,13 @@ export default function AdminUsersPage() {
   };
 
   const handleReminderUserChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    setReminderPreview(null);
     setReminderForm((prev) => ({ ...prev, userId: event.target.value }));
   };
 
   const handleReminderInitiativeChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { value, checked } = event.target;
+    setReminderPreview(null);
     setReminderForm((prev) => ({
       ...prev,
       initiativeIds: checked ? [...prev.initiativeIds, value] : prev.initiativeIds.filter((id) => id !== value),
@@ -165,11 +177,45 @@ export default function AdminUsersPage() {
         throw new Error(payload.error ?? 'リマインドメール設定の保存に失敗しました。');
       }
       setReminderSettings((await res.json()) as ReminderSettings);
+      setReminderPreview(null);
       setSuccessMessage('リマインドメール設定を保存しました。');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'リマインドメール設定の保存に失敗しました。');
     } finally {
       setIsSavingReminderSettings(false);
+    }
+  };
+
+  const previewReminder = async () => {
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    if (!reminderForm.userId || reminderForm.initiativeIds.length === 0) {
+      setReminderPreview(null);
+      setErrorMessage('送付先ユーザーと対象施策を選択してください。');
+      return;
+    }
+
+    setIsPreviewingReminder(true);
+    try {
+      const res = await fetch('/api/admin/reminder/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: Number(reminderForm.userId),
+          initiativeIds: reminderForm.initiativeIds.map((initiativeId) => Number(initiativeId)),
+        }),
+      });
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => ({}))) as ApiError;
+        throw new Error(payload.error ?? 'リマインドメールプレビューの取得に失敗しました。');
+      }
+      setReminderPreview((await res.json()) as ReminderPreview);
+    } catch (error) {
+      setReminderPreview(null);
+      setErrorMessage(error instanceof Error ? error.message : 'リマインドメールプレビューの取得に失敗しました。');
+    } finally {
+      setIsPreviewingReminder(false);
     }
   };
 
@@ -198,6 +244,7 @@ export default function AdminUsersPage() {
         throw new Error(payload.error ?? 'リマインドメール送信に失敗しました。');
       }
       setReminderForm(initialReminderForm);
+      setReminderPreview(null);
       setSuccessMessage('リマインドメールを送信しました。');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'リマインドメール送信に失敗しました。');
@@ -481,13 +528,38 @@ export default function AdminUsersPage() {
               </div>
               <p className="mt-1 text-xs text-gray-500">複数選択できます。</p>
             </fieldset>
-            <button
-              type="submit"
-              disabled={isSendingReminder}
-              className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isSendingReminder ? '送信中...' : 'リマインドメールを送信'}
-            </button>
+            {reminderPreview && (
+              <div className="space-y-2 rounded border border-gray-200 bg-gray-50 p-3 text-sm">
+                <div>
+                  <p className="mb-1 font-semibold text-gray-700">件名</p>
+                  <p className="whitespace-pre-wrap break-words rounded border bg-white px-3 py-2">{reminderPreview.subject}</p>
+                </div>
+                <div>
+                  <p className="mb-1 font-semibold text-gray-700">本文</p>
+                  <pre className="max-h-80 overflow-y-auto whitespace-pre-wrap break-words rounded border bg-white px-3 py-2 font-sans text-sm leading-6 text-gray-800">{reminderPreview.body}</pre>
+                </div>
+                <p className="text-xs text-gray-500">
+                  宛先: {reminderPreview.recipientName} ({reminderPreview.recipientEmail}) / 対象施策: {reminderPreview.initiativeCount}件
+                </p>
+              </div>
+            )}
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={previewReminder}
+                disabled={isPreviewingReminder || isSendingReminder}
+                className="rounded border border-blue-600 px-4 py-2 text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isPreviewingReminder ? 'プレビュー取得中...' : 'プレビュー'}
+              </button>
+              <button
+                type="submit"
+                disabled={isSendingReminder || isPreviewingReminder}
+                className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSendingReminder ? '送信中...' : 'リマインドメールを送信'}
+              </button>
+            </div>
           </form>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import type { Initiative, ProgressLog } from '@/generated/client/client';
+import type { Initiative, PrismaClient, ProgressLog } from '@/generated/client/client';
 
 export type ReminderEmailInput = {
   recipientName: string;
@@ -15,6 +15,18 @@ export type ReminderEmailResult = {
   providerMessageId: string | null;
 };
 
+export type PreparedReminderEmail = {
+  user: {
+    id: number;
+    email: string;
+    displayName: string | null;
+  };
+  selectedInitiatives: ReminderEmailInput['initiatives'];
+  emailInput: ReminderEmailInput;
+  subject: string;
+  body: string;
+};
+
 type ResendSendEmailResponse = {
   id?: string;
   name?: string;
@@ -22,6 +34,27 @@ type ResendSendEmailResponse = {
 };
 
 const RESEND_EMAIL_API_URL = 'https://api.resend.com/emails';
+
+export class ReminderEmailValidationError extends Error {
+  statusCode: number;
+
+  constructor(message: string, statusCode: number) {
+    super(message);
+    this.name = 'ReminderEmailValidationError';
+    this.statusCode = statusCode;
+  }
+}
+
+export const parseReminderInitiativeIds = (value: unknown) => {
+  const rawIds = Array.isArray(value) ? value : value === undefined ? [] : [value];
+  const ids = rawIds.map((id) => Number(id));
+
+  if (ids.length === 0 || ids.some((id) => !Number.isInteger(id))) {
+    return null;
+  }
+
+  return Array.from(new Set(ids));
+};
 
 const formatDate = (value: Date | null) => {
   if (!value) return '未入力';
@@ -72,6 +105,69 @@ export const buildReminderEmailBody = ({ recipientName, introText, closingText, 
     '',
     closingText.trim(),
   ].join('\n\n');
+};
+
+export const prepareReminderEmail = async ({
+  prisma,
+  userId,
+  initiativeIds,
+  missingSettingsMessage,
+}: {
+  prisma: PrismaClient;
+  userId: number;
+  initiativeIds: number[];
+  missingSettingsMessage: string;
+}): Promise<PreparedReminderEmail> => {
+  const [user, initiatives, settings] = await Promise.all([
+    prisma.appUser.findUnique({ where: { id: userId } }),
+    prisma.initiative.findMany({
+      where: { id: { in: initiativeIds } },
+      include: {
+        progressLogs: {
+          where: { isLatest: true },
+          orderBy: [{ fiscalYear: 'desc' }, { fiscalQuarter: 'desc' }, { versionNo: 'desc' }],
+          take: 1,
+        },
+      },
+    }),
+    prisma.reminderEmailSetting.findFirst({ orderBy: { id: 'asc' } }),
+  ]);
+
+  if (!user || !user.isActive) {
+    throw new ReminderEmailValidationError('有効な送付先ユーザーが見つかりません。', 404);
+  }
+
+  const initiativesById = new Map(initiatives.map((initiative) => [initiative.id, initiative]));
+  const selectedInitiatives = initiativeIds.flatMap((id) => {
+    const initiative = initiativesById.get(id);
+    return initiative ? [initiative] : [];
+  });
+
+  if (selectedInitiatives.length !== initiativeIds.length || selectedInitiatives.some((initiative) => !initiative.isActive)) {
+    throw new ReminderEmailValidationError('有効な対象施策が見つかりません。', 404);
+  }
+  if (!settings) {
+    throw new ReminderEmailValidationError(missingSettingsMessage, 400);
+  }
+
+  const recipientName = user.displayName || user.email;
+  const emailInput = {
+    recipientName,
+    recipientEmail: user.email,
+    introText: settings.introText,
+    closingText: settings.closingText,
+    initiatives: selectedInitiatives,
+  };
+  const subject = getReminderEmailSubject(selectedInitiatives);
+  const body = buildReminderEmailBody(emailInput);
+
+  return {
+    user,
+    selectedInitiatives,
+    emailInput,
+    subject,
+    body,
+  };
 };
 
 const requireEnv = (name: string) => {
