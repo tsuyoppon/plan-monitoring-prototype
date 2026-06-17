@@ -24,7 +24,7 @@ type ReminderSettings = {
 
 type ReminderForm = {
   userId: string;
-  initiativeId: string;
+  initiativeIds: string[];
 };
 
 type EditUserForm = {
@@ -51,7 +51,7 @@ const initialReminderSettings: ReminderSettings = {
 
 const initialReminderForm: ReminderForm = {
   userId: '',
-  initiativeId: '',
+  initiativeIds: [],
 };
 
 export default function AdminUsersPage() {
@@ -131,9 +131,16 @@ export default function AdminUsersPage() {
     setReminderSettings((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleReminderFormChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    const { name, value } = event.target;
-    setReminderForm((prev) => ({ ...prev, [name]: value }));
+  const handleReminderUserChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    setReminderForm((prev) => ({ ...prev, userId: event.target.value }));
+  };
+
+  const handleReminderInitiativeChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { value, checked } = event.target;
+    setReminderForm((prev) => ({
+      ...prev,
+      initiativeIds: checked ? [...prev.initiativeIds, value] : prev.initiativeIds.filter((id) => id !== value),
+    }));
   };
 
   const saveReminderSettings = async (event: FormEvent<HTMLFormElement>) => {
@@ -171,7 +178,7 @@ export default function AdminUsersPage() {
     setErrorMessage('');
     setSuccessMessage('');
 
-    if (!reminderForm.userId || !reminderForm.initiativeId) {
+    if (!reminderForm.userId || reminderForm.initiativeIds.length === 0) {
       setErrorMessage('送付先ユーザーと対象施策を選択してください。');
       return;
     }
@@ -181,7 +188,10 @@ export default function AdminUsersPage() {
       const res = await fetch('/api/admin/reminder/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: Number(reminderForm.userId), initiativeId: Number(reminderForm.initiativeId) }),
+        body: JSON.stringify({
+          userId: Number(reminderForm.userId),
+          initiativeIds: reminderForm.initiativeIds.map((initiativeId) => Number(initiativeId)),
+        }),
       });
       if (!res.ok) {
         const payload = (await res.json().catch(() => ({}))) as ApiError;
@@ -434,11 +444,11 @@ export default function AdminUsersPage() {
 
         <div className="rounded border bg-white p-4">
           <h2 className="mb-3 text-lg font-semibold">リマインドメール送信</h2>
-          <p className="mb-3 text-sm text-gray-600">選択したユーザー宛に、選択した施策の最新進捗状況を含むメールを送信します。</p>
+          <p className="mb-3 text-sm text-gray-600">選択したユーザー宛に、選択した複数施策の最新進捗状況を含むメールを送信します。</p>
           <form onSubmit={sendReminder} className="space-y-3">
             <label className="block text-sm">
               <span className="mb-1 block text-gray-700">送付先ユーザー *</span>
-              <select name="userId" value={reminderForm.userId} onChange={handleReminderFormChange} className="w-full rounded border px-3 py-2" required>
+              <select name="userId" value={reminderForm.userId} onChange={handleReminderUserChange} className="w-full rounded border px-3 py-2" required>
                 <option value="">選択してください</option>
                 {activeReminderUsers.map((user) => (
                   <option key={user.id} value={user.id}>
@@ -447,17 +457,30 @@ export default function AdminUsersPage() {
                 ))}
               </select>
             </label>
-            <label className="block text-sm">
-              <span className="mb-1 block text-gray-700">対象施策 *</span>
-              <select name="initiativeId" value={reminderForm.initiativeId} onChange={handleReminderFormChange} className="w-full rounded border px-3 py-2" required>
-                <option value="">選択してください</option>
-                {sortedInitiatives.map((initiative) => (
-                  <option key={initiative.id} value={initiative.id}>
-                    {initiative.measureName}（{initiative.domain}）
-                  </option>
-                ))}
-              </select>
-            </label>
+            <fieldset className="block text-sm">
+              <legend className="mb-1 block text-gray-700">対象施策 *</legend>
+              <div className="max-h-48 space-y-2 overflow-y-auto rounded border px-3 py-2">
+                {sortedInitiatives.map((initiative) => {
+                  const initiativeId = String(initiative.id);
+                  return (
+                    <label key={initiative.id} className="flex items-start gap-2">
+                      <input
+                        type="checkbox"
+                        name="initiativeIds"
+                        value={initiativeId}
+                        checked={reminderForm.initiativeIds.includes(initiativeId)}
+                        onChange={handleReminderInitiativeChange}
+                        className="mt-1"
+                      />
+                      <span>
+                        {initiative.measureName}（{initiative.domain}）
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+              <p className="mt-1 text-xs text-gray-500">複数選択できます。</p>
+            </fieldset>
             <button
               type="submit"
               disabled={isSendingReminder}

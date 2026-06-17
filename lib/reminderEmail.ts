@@ -5,7 +5,7 @@ export type ReminderEmailInput = {
   recipientEmail: string;
   introText: string;
   closingText: string;
-  initiative: Initiative & { progressLogs: ProgressLog[] };
+  initiatives: Array<Initiative & { progressLogs: ProgressLog[] }>;
 };
 
 export type ReminderEmailResult = {
@@ -28,11 +28,15 @@ const formatDate = (value: Date | null) => {
   return value.toISOString().slice(0, 10);
 };
 
-export const getReminderEmailSubject = (initiative: Pick<Initiative, 'measureName'>) => {
-  return `【リマインド】${initiative.measureName}の最新進捗状況`;
+export const getReminderEmailSubject = (initiatives: Array<Pick<Initiative, 'measureName'>>) => {
+  if (initiatives.length === 1) {
+    return `【リマインド】${initiatives[0].measureName}の最新進捗状況`;
+  }
+
+  return `【リマインド】${initiatives.length}件の施策の最新進捗状況`;
 };
 
-export const buildReminderEmailBody = ({ recipientName, introText, closingText, initiative }: ReminderEmailInput) => {
+const buildInitiativeProgressText = (initiative: Initiative & { progressLogs: ProgressLog[] }) => {
   const latestProgress = initiative.progressLogs[0];
   const progressText = latestProgress
     ? [
@@ -46,18 +50,28 @@ export const buildReminderEmailBody = ({ recipientName, introText, closingText, 
     : '最新の進捗状況は未登録です。';
 
   return [
+    `施策名: ${initiative.measureName}`,
+    `領域: ${initiative.domain}`,
+    `担当部署: ${initiative.department || '未入力'}`,
+    progressText,
+  ].join('\n');
+};
+
+export const buildReminderEmailBody = ({ recipientName, introText, closingText, initiatives }: ReminderEmailInput) => {
+  const initiativeSections = initiatives.map((initiative, index) => {
+    return [`【対象施策${index + 1}】`, buildInitiativeProgressText(initiative)].join('\n');
+  });
+
+  return [
     `${recipientName} 様`,
     '',
     introText.trim(),
     '',
     '【対象施策の最新進捗状況】',
-    `施策名: ${initiative.measureName}`,
-    `領域: ${initiative.domain}`,
-    `担当部署: ${initiative.department || '未入力'}`,
-    progressText,
+    ...initiativeSections,
     '',
     closingText.trim(),
-  ].join('\n');
+  ].join('\n\n');
 };
 
 const requireEnv = (name: string) => {
@@ -72,7 +86,7 @@ export const sendReminderEmail = async (input: ReminderEmailInput): Promise<Remi
   const apiKey = requireEnv('RESEND_API_KEY');
   const from = requireEnv('REMINDER_EMAIL_FROM');
   const replyTo = process.env.REMINDER_EMAIL_REPLY_TO?.trim();
-  const subject = getReminderEmailSubject(input.initiative);
+  const subject = getReminderEmailSubject(input.initiatives);
   const body = buildReminderEmailBody(input);
 
   const response = await fetch(RESEND_EMAIL_API_URL, {
