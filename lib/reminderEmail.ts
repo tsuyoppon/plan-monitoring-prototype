@@ -3,6 +3,7 @@ import type { Initiative, PrismaClient, ProgressLog } from '@/generated/client/c
 export type ReminderEmailInput = {
   recipientName: string;
   recipientEmail: string;
+  subject: string;
   introText: string;
   closingText: string;
   initiatives: Array<Initiative & { progressLogs: ProgressLog[] }>;
@@ -59,14 +60,6 @@ export const parseReminderInitiativeIds = (value: unknown) => {
 const formatDate = (value: Date | null) => {
   if (!value) return '未入力';
   return value.toISOString().slice(0, 10);
-};
-
-export const getReminderEmailSubject = (initiatives: Array<Pick<Initiative, 'measureName'>>) => {
-  if (initiatives.length === 1) {
-    return `【リマインド】${initiatives[0].measureName}の最新進捗状況`;
-  }
-
-  return `【リマインド】${initiatives.length}件の施策の最新進捗状況`;
 };
 
 const buildInitiativeProgressText = (initiative: Initiative & { progressLogs: ProgressLog[] }) => {
@@ -154,11 +147,12 @@ export const prepareReminderEmail = async ({
   const emailInput = {
     recipientName,
     recipientEmail: user.email,
+    subject: settings.subject,
     introText: settings.introText,
     closingText: settings.closingText,
     initiatives: selectedInitiatives,
   };
-  const subject = getReminderEmailSubject(selectedInitiatives);
+  const subject = emailInput.subject;
   const body = buildReminderEmailBody(emailInput);
 
   return {
@@ -182,7 +176,7 @@ export const sendReminderEmail = async (input: ReminderEmailInput): Promise<Remi
   const apiKey = requireEnv('RESEND_API_KEY');
   const from = requireEnv('REMINDER_EMAIL_FROM');
   const replyTo = process.env.REMINDER_EMAIL_REPLY_TO?.trim();
-  const subject = getReminderEmailSubject(input.initiatives);
+  const subject = input.subject.trim();
   const body = buildReminderEmailBody(input);
 
   const response = await fetch(RESEND_EMAIL_API_URL, {

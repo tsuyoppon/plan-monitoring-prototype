@@ -18,6 +18,7 @@ type CreateUserForm = {
 };
 
 type ReminderSettings = {
+  subject: string;
   introText: string;
   closingText: string;
 };
@@ -53,6 +54,7 @@ const initialCreateUserForm: CreateUserForm = {
 };
 
 const initialReminderSettings: ReminderSettings = {
+  subject: '',
   introText: '',
   closingText: '',
 };
@@ -136,7 +138,7 @@ export default function AdminUsersPage() {
     return [...initiatives].sort((a, b) => a.id - b.id);
   }, [initiatives]);
 
-  const handleReminderSettingsChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+  const handleReminderSettingsChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target;
     setReminderSettings((prev) => ({ ...prev, [name]: value }));
   };
@@ -160,8 +162,8 @@ export default function AdminUsersPage() {
     setErrorMessage('');
     setSuccessMessage('');
 
-    if (!reminderSettings.introText.trim() || !reminderSettings.closingText.trim()) {
-      setErrorMessage('案内文と末尾文・問い合わせ先は必須です。');
+    if (!reminderSettings.subject.trim() || !reminderSettings.introText.trim() || !reminderSettings.closingText.trim()) {
+      setErrorMessage('メールタイトル、案内文、末尾文・問い合わせ先は必須です。');
       return;
     }
 
@@ -459,6 +461,17 @@ export default function AdminUsersPage() {
         <div className="rounded border bg-white p-4">
           <h2 className="mb-3 text-lg font-semibold">リマインドメール定型文</h2>
           <form onSubmit={saveReminderSettings} className="space-y-3">
+            <label className="block text-sm">
+              <span className="mb-1 block text-gray-700">メールタイトル *</span>
+              <input
+                type="text"
+                name="subject"
+                value={reminderSettings.subject}
+                onChange={handleReminderSettingsChange}
+                className="w-full rounded border px-3 py-2"
+                required
+              />
+            </label>
             <label className="block text-sm">
               <span className="mb-1 block text-gray-700">宛先後の案内文 *</span>
               <textarea
