@@ -62,30 +62,46 @@ const formatDate = (value: Date | null) => {
   return value.toISOString().slice(0, 10);
 };
 
-const buildInitiativeProgressText = (initiative: Initiative & { progressLogs: ProgressLog[] }) => {
-  const latestProgress = initiative.progressLogs[0];
-  const progressText = latestProgress
-    ? [
-        `年度/四半期: ${latestProgress.fiscalYear}年度 Q${latestProgress.fiscalQuarter}`,
-        `進捗状況: ${latestProgress.progressStatus || '未入力'}`,
-        `進捗評価: ${latestProgress.progressEvaluation || '未入力'}`,
-        `次のアクション: ${latestProgress.nextAction || '未入力'}`,
-        `入力者: ${latestProgress.inputBy || '未入力'}`,
-        `入力日: ${formatDate(latestProgress.inputAt)}`,
-      ].join('\n')
-    : '最新の進捗状況は未登録です。';
-
+const buildInitiativeBasicInfoText = (initiative: Initiative) => {
   return [
+    '基本情報',
     `施策名: ${initiative.measureName}`,
     `領域: ${initiative.domain}`,
     `担当部署: ${initiative.department || '未入力'}`,
-    progressText,
+    `詳細: ${initiative.detail || '未入力'}`,
+    `ゴール: ${initiative.goal || '未入力'}`,
+    `KPI: ${initiative.kpi || '未入力'}`,
+    `開始日: ${formatDate(initiative.startDate)}`,
+    `完了日: ${formatDate(initiative.endDate)}`,
+    `スケジュール: ${initiative.scheduleText || '未入力'}`,
   ].join('\n');
+};
+
+const buildInitiativeProgressText = (initiative: Initiative & { progressLogs: ProgressLog[] }) => {
+  const latestProgress = initiative.progressLogs[0];
+
+  if (!latestProgress) {
+    return ['最新進捗', '進捗状況: 無し'].join('\n');
+  }
+
+  return [
+    '最新進捗',
+    `年度/四半期: ${latestProgress.fiscalYear}年度 Q${latestProgress.fiscalQuarter}`,
+    `進捗状況: ${latestProgress.progressStatus || '未入力'}`,
+    `進捗評価: ${latestProgress.progressEvaluation || '未入力'}`,
+    `次のアクション: ${latestProgress.nextAction || '未入力'}`,
+    `入力者: ${latestProgress.inputBy || '未入力'}`,
+    `入力日: ${formatDate(latestProgress.inputAt)}`,
+  ].join('\n');
+};
+
+const buildInitiativeReminderText = (initiative: Initiative & { progressLogs: ProgressLog[] }) => {
+  return [buildInitiativeBasicInfoText(initiative), buildInitiativeProgressText(initiative)].join('\n\n');
 };
 
 export const buildReminderEmailBody = ({ recipientName, introText, closingText, initiatives }: ReminderEmailInput) => {
   const initiativeSections = initiatives.map((initiative, index) => {
-    return [`【対象施策${index + 1}】`, buildInitiativeProgressText(initiative)].join('\n');
+    return [`【対象施策${index + 1}】`, buildInitiativeReminderText(initiative)].join('\n');
   });
 
   return [
