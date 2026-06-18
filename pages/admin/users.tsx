@@ -53,10 +53,14 @@ const initialCreateUserForm: CreateUserForm = {
   role: 'viewer',
 };
 
+const DEFAULT_REMINDER_SUBJECT = '【リマインド】施策の最新進捗状況';
+const DEFAULT_REMINDER_INTRO_TEXT = '以下の施策について、最新の進捗状況をお知らせします。内容をご確認ください。';
+const DEFAULT_REMINDER_CLOSING_TEXT = '以上、よろしくお願いいたします。\nお問い合わせ先: monitoring@example.com';
+
 const initialReminderSettings: ReminderSettings = {
-  subject: '',
-  introText: '',
-  closingText: '',
+  subject: DEFAULT_REMINDER_SUBJECT,
+  introText: DEFAULT_REMINDER_INTRO_TEXT,
+  closingText: DEFAULT_REMINDER_CLOSING_TEXT,
 };
 
 const initialReminderForm: ReminderForm = {
@@ -107,13 +111,16 @@ export default function AdminUsersPage() {
         const payload = (await initiativesRes.json().catch(() => ({}))) as ApiError;
         throw new Error(payload.error ?? '施策一覧の取得に失敗しました。');
       }
-      if (!settingsRes.ok) {
-        const payload = (await settingsRes.json().catch(() => ({}))) as ApiError;
-        throw new Error(payload.error ?? 'リマインドメール設定の取得に失敗しました。');
-      }
-
       setUsers((await usersRes.json()) as AppUser[]);
       setInitiatives((await initiativesRes.json()) as Initiative[]);
+
+      if (!settingsRes.ok) {
+        const payload = (await settingsRes.json().catch(() => ({}))) as ApiError;
+        setReminderSettings(initialReminderSettings);
+        setErrorMessage(payload.error ?? 'リマインドメール設定の取得に失敗しました。定型文は初期値を表示しています。');
+        return;
+      }
+
       setReminderSettings((await settingsRes.json()) as ReminderSettings);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : '管理者データの取得に失敗しました。');
@@ -129,8 +136,6 @@ export default function AdminUsersPage() {
   const sortedUsers = useMemo(() => {
     return [...users].sort((a, b) => a.id - b.id);
   }, [users]);
-
-
 
   const activeReminderUsers = useMemo(() => sortedUsers.filter((user) => user.isActive), [sortedUsers]);
 

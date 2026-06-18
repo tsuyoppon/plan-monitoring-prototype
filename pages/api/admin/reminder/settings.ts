@@ -13,8 +13,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (!session) return;
 
   if (req.method === 'GET') {
-    const settings = await prisma.reminderEmailSetting.findFirst({ orderBy: { id: 'asc' } });
-    res.status(200).json(settings ?? { subject: DEFAULT_SUBJECT, introText: DEFAULT_INTRO_TEXT, closingText: DEFAULT_CLOSING_TEXT });
+    try {
+      const settings = await prisma.reminderEmailSetting.findFirst({ orderBy: { id: 'asc' } });
+      res.status(200).json(settings ?? { subject: DEFAULT_SUBJECT, introText: DEFAULT_INTRO_TEXT, closingText: DEFAULT_CLOSING_TEXT });
+    } catch (error) {
+      console.error('Failed to fetch reminder email settings:', error);
+      res.status(500).json({ error: 'リマインドメール設定の取得に失敗しました。' });
+    }
     return;
   }
 
@@ -33,12 +38,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     const data = { subject: subject.trim(), introText: introText.trim(), closingText: closingText.trim() };
-    const existing = await prisma.reminderEmailSetting.findFirst({ orderBy: { id: 'asc' } });
-    const settings = existing
-      ? await prisma.reminderEmailSetting.update({ where: { id: existing.id }, data })
-      : await prisma.reminderEmailSetting.create({ data });
+    try {
+      const existing = await prisma.reminderEmailSetting.findFirst({ orderBy: { id: 'asc' } });
+      const settings = existing
+        ? await prisma.reminderEmailSetting.update({ where: { id: existing.id }, data })
+        : await prisma.reminderEmailSetting.create({ data });
 
-    res.status(200).json(settings);
+      res.status(200).json(settings);
+    } catch (error) {
+      console.error('Failed to save reminder email settings:', error);
+      res.status(500).json({ error: 'リマインドメール設定の保存に失敗しました。' });
+    }
     return;
   }
 
